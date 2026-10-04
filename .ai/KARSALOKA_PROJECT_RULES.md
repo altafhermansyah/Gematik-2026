@@ -6,6 +6,7 @@
 > **Primary stack:** Next.js + React + TypeScript + Prisma + PostgreSQL
 > **Primary visual technology:** cobe
 > **Project concept:** Global problem → innovation → personal path
+> **Precedence statement:** `docs/PROJECT_CONCEPT.md` is the authority for product scope, page map, and what each database table is responsible for. `KARSALOKA_PROJECT_RULES.md` remains the authority for engineering, design, accessibility, and process rules. Where the two overlap, engineering rules in this document must stay consistent with `docs/PROJECT_CONCEPT.md`. If a conflict arises between them, stop and ask instead of choosing.
 
 ---
 
@@ -16,9 +17,10 @@ This file is the **project constitution**. Every human contributor and every AI 
 When another instruction conflicts with this document:
 
 1. Follow explicit human instructions for the current task.
-2. Preserve the architecture and invariants in this document unless the human explicitly approves a change.
-3. Never make a potentially destructive architectural change silently.
-4. When uncertain, inspect the existing implementation and dependencies first rather than guessing.
+2. Refer to `docs/PROJECT_CONCEPT.md` as the authority for product scope, page map, and database table responsibilities; engineering rules in this document must stay consistent with it. If they conflict, stop and ask.
+3. Preserve the architecture and invariants in this document unless the human explicitly approves a change.
+4. Never make a potentially destructive architectural change silently.
+5. When uncertain, inspect the existing implementation and dependencies first rather than guessing.
 
 This document governs:
 
@@ -97,7 +99,7 @@ Avoid features that exist only because they are technically impressive.
 
 # 2. Competition Constraints
 
-The official competition guideline states that the website must follow the theme **"Empowering Global Innovators for an Intelligent Future"**, be original, and contain informative, educational, and theme-relevant content. The guideline permits static and dynamic web implementations, including React and other frameworks. See the supplied guideline, section C. fileciteturn0file1L23-L36
+The official competition guideline states that the website must follow the theme **"Empowering Global Innovators for an Intelligent Future"**, be original, and contain informative, educational, and theme-relevant content. The guideline permits static and dynamic web implementations, including React and other frameworks. See the supplied guideline, section C.
 
 The judging weights are:
 
@@ -110,7 +112,7 @@ The judging weights are:
 | Demo video & documentation | 10% |
 | Finalist presentation | 10% |
 
-These weights are stated in section D of the supplied guideline. fileciteturn0file1L49-L78
+These weights are stated in section D of the supplied guideline.
 
 Therefore, technical architecture must never sacrifice usability and storytelling, while visual polish must never replace actual functionality.
 
@@ -184,7 +186,7 @@ The application is a **modular monolith**:
         │                │                │
       Atlas            Cases           Paths
         │                │                │
-      Quiz           Resources        Progress
+      Quiz           Resources         Admin
         │                │                │
         └────────────────┼────────────────┘
                          │
@@ -193,7 +195,7 @@ The application is a **modular monolith**:
               Prisma / PostgreSQL
 ```
 
-Modules live in one deployable application and one database, but their responsibilities remain separated.
+Modules live in one deployable application and one database, but their responsibilities remain separated. Visitors never log in; path progress, bookmarks, and quiz results live in the browser (`localStorage` through Zustand `persist`), never in the database. Only administrators log in, to manage content.
 
 ## 4.2 Suggested module boundaries
 
@@ -205,7 +207,8 @@ src/
 │   ├── cases/
 │   │   └── [slug]/
 │   ├── paths/
-│   ├── dashboard/
+│   │   └── [slug]/
+│   ├── quiz/
 │   ├── admin/
 │   └── api/
 │
@@ -216,7 +219,6 @@ src/
 │   ├── cases/
 │   ├── paths/
 │   ├── quiz/
-│   ├── dashboard/
 │   └── admin/
 │
 ├── modules/
@@ -229,13 +231,18 @@ src/
 │   ├── cases/
 │   ├── paths/
 │   ├── quiz/
+│   │   ├── questions.ts
+│   │   ├── scoring.ts
+│   │   └── types.ts
 │   ├── progress/
+│   │   └── store.ts
 │   ├── resources/
 │   └── admin/
 │
 ├── lib/
 │   ├── prisma.ts
 │   ├── auth/
+│   │   └── session.ts
 │   ├── validation/
 │   ├── security/
 │   ├── utils/
@@ -244,6 +251,7 @@ src/
 ├── hooks/
 ├── styles/
 └── generated/
+    └── prisma/
 ```
 
 This is a target structure, not permission to blindly restructure the repository. Preserve working code and migrate incrementally.
@@ -418,15 +426,21 @@ Validate:
 
 # 7. Prisma & PostgreSQL Rules
 
-## 7.1 Database access
+## 7.1 Database access & architecture
 
-Prisma is the application's primary database access layer.
+Prisma is the application's primary database access layer. Provider is PostgreSQL using `@prisma/adapter-pg`.
 
-Use the existing Prisma client setup. Do not instantiate a new `PrismaClient` per request/component.
+The database schema consists of exactly 10 tables:
+`AdminUser`, `Domain`, `Case`, `CaseSource`, `Path`, `PathNode`, `PathEdge`, `CasePath`, `Skill`, and `Resource`.
+
+Use the existing Prisma client setup in `src/lib/prisma.ts`. Do not instantiate a new `PrismaClient` per request/component.
+The generated client lives in `src/generated/prisma` and is gitignored.
 
 ## 7.2 Schema changes
 
 Never silently alter the Prisma schema for convenience.
+
+All schema changes go through `prisma migrate dev`. **Never use `db push`** on shared databases.
 
 Before a schema change, determine:
 
@@ -440,10 +454,12 @@ Destructive changes require explicit human approval.
 
 ## 7.3 Migration rules
 
+All schema changes go through `prisma migrate dev`.
+`prisma/migrations` is committed to version control.
+
+In Prisma 7, `migrate dev` does not automatically regenerate the client: run `prisma generate` after every migration (the `npm run db:migrate` script runs both: `prisma migrate dev && prisma generate`).
+
 Do not edit an already-applied migration by hand.
-
-Create a new migration for schema changes.
-
 Do not use destructive database reset commands against shared/important databases.
 
 ## 7.4 Query efficiency
@@ -475,6 +491,8 @@ Index fields commonly used for:
 - foreign-key joins
 - frequently queried composite conditions
 
+`Case.sdgs` is `Int[]` and `Case.technologies` is `String[]` (native PostgreSQL arrays, GIN-indexed: `@@index([sdgs], type: Gin)` and `@@index([technologies], type: Gin)`).
+
 Do not blindly index every field.
 
 ## 7.6 Transactions
@@ -491,46 +509,63 @@ Use cursor pagination for large/high-growth datasets when appropriate.
 
 For the curated case library, simple pagination or bounded retrieval is acceptable if the dataset remains intentionally small.
 
+## 7.8 Seed rules
+
+Seed operations must follow strict integrity constraints:
+
+- The seed wipes content tables, but **never wipes `AdminUser`**.
+- Refuses to run when `NODE_ENV=production` unless `SEED_ALLOW_WIPE` is set.
+- The seed must fail loudly on integrity violations:
+  - a `PUBLISHED` case without at least one source (`CaseSource`)
+  - a `PathEdge` between nodes of different paths
+  - any quiz-referenced path or skill slug that does not exist in the database/seed.
+
+## 7.9 Localized text & content integrity
+
+- Localized text is stored as Json `{ "id": string, "en": string }` and **must be validated with Zod** when read; no raw type assertions (e.g. `as LocalizedText`) on Json.
+- Published content rules: a `PUBLISHED` case must have at least one source and both locales (`id` and `en`) filled.
+- The `metrics` field contains only verified numbers from verifiable sources; no fabricated statistics.
+
 ---
 
 # 8. Domain Rules
 
-## 8.1 Core domain entities
+## 8.1 Core domain entities (10 tables)
 
-The initial domain should revolve around:
+The database schema is strictly structured into 10 tables:
 
 ```text
-Case
-├── Problem
-├── Innovation
-├── AI / Technology role
-├── Impact
-├── Location
-├── Field
-├── SDG relationship
-├── Sources
-└── Related skill path
-
-SkillPath
-├── Skills / nodes
-├── Prerequisites
-├── Resources
-└── Project milestone
-
-Quiz
-├── Questions
-├── Options
-├── Scoring rules
-└── Result / recommended path
-
-Progress
-├── User/session identity
-├── Path
-├── Completed nodes
-└── Timestamps
+Domain 1──∞ Case 1──∞ CaseSource
+Case ∞──∞ Path                        (lewat CasePath)
+Domain 1──∞ Path 1──∞ PathNode ∞──1 Skill 1──∞ Resource
+PathNode ∞──∞ PathNode                (lewat PathEdge = prasyarat)
+AdminUser                             (berdiri sendiri)
 ```
 
-Exact schema names may differ, but concepts must remain explicit.
+Table responsibilities (from `docs/PROJECT_CONCEPT.md` §9):
+
+| Table | Responsibility |
+|---|---|
+| `Domain` | Kategori bidang: slug, nama (id/en), warna, urutan. Hampir statis (6 baris). |
+| `Case` | Studi kasus: teks bilingual (judul, ringkasan, masalah, solusi, peran AI, dampak), lokasi (`lat`, `lng`, negara, region), `sdgs Int[]`, `technologies String[]`, `status`, `featured`, `metrics`. |
+| `CaseSource` | Sumber rujukan per kasus: judul, penerbit, URL, tanggal akses. |
+| `Path` | Satu jalur belajar: judul, deskripsi, level, estimasi jam, `status`. `domainId` opsional karena jalur dasar berlaku lintas bidang. |
+| `PathNode` | Satu langkah dalam jalur: skill yang dipelajari, tipe (`CONCEPT`/`PRACTICE`/`PROJECT`), urutan, posisi di kanvas (`posX`/`posY`), tugas. |
+| `PathEdge` | Prasyarat antar node (`from → to`). Kedua node harus satu jalur. |
+| `Skill` | Katalog skill yang dipakai ulang di banyak jalur. |
+| `Resource` | Materi belajar per skill: tipe, judul, URL, penyedia, bahasa, gratis atau tidak. |
+| `CasePath` | Menghubungkan kasus dan jalur, dengan `relevance` (1–3) dan catatan alasan. |
+| `AdminUser` | Akun admin: email dan `passwordHash` (bcrypt). Tidak ada pendaftaran publik; dibuat lewat seed dari `.env`. |
+
+### Intentionally NOT database tables (from `docs/PROJECT_CONCEPT.md` §9.5):
+
+| Concern | Location / Mechanism |
+|---|---|
+| Pertanyaan kuis dan bobotnya | Kode: `modules/quiz/questions.ts` |
+| Skoring rekomendasi | Fungsi murni `recommendPath()` |
+| Progres node, bookmark, hasil kuis | `localStorage` lewat Zustand `persist` |
+| Sesi admin | Cookie bertanda tangan (`jose`; `httpOnly`, `secure` in production, `SameSite=Lax`) |
+| Teks antarmuka dua bahasa | File pesan, bukan database |
 
 ## 8.2 Case content quality
 
@@ -570,11 +605,11 @@ Quality beats quantity.
 
 ## 9.1 cobe
 
-Use **cobe** as the primary globe rendering library.
+Use **cobe** (`cobe@2.x`) as the primary globe rendering library.
 
 Do not install or introduce another globe engine unless explicitly approved.
 
-Do not add Three.js/react-three-fiber/react-globe.gl merely because they are popular.
+No `react-globe.gl` or `three` (Three.js / react-three-fiber).
 
 ## 9.2 Globe responsibilities
 
@@ -587,13 +622,15 @@ The globe must provide meaningful exploration:
 - selected state is visible
 - interaction remains usable on touch devices
 
-## 9.3 Animation
+## 9.3 Animation & cobe 2.x technical invariants
 
-Animations must remain efficient.
+Animations must remain efficient:
 
-Use `requestAnimationFrame` appropriately and clean it up on unmount.
-
-Do not create competing animation loops for the same globe.
+- `cobe@2.x` has no `onRender` callback option; rotation is driven by a `requestAnimationFrame` loop calling `globe.update({ phi, theta })`.
+- The `width` and `height` options passed to cobe are in logical CSS pixels; cobe multiplies by `devicePixelRatio` itself. Do not pre-multiply width or height by `devicePixelRatio`.
+- Cap `devicePixelRatio` at 2 to maintain smooth performance and bounded memory on high-DPI displays.
+- Clean up the `requestAnimationFrame` loop and call `globe.destroy()` on component unmount.
+- Do not create competing animation loops for the same globe.
 
 ## 9.4 Marker visibility
 
@@ -665,13 +702,14 @@ Provide an alternative list/timeline representation when necessary.
 
 # 11. Quiz & Recommendation Engine
 
-## 11.1 Initial implementation
+## 11.1 Quiz as code
 
-Use deterministic, rule-based scoring.
+The diagnostic quiz lives entirely in code, not in the database:
 
-Do not make an external LLM/API a critical dependency for the core quiz.
-
-Core functionality must work offline from external AI services.
+- Questions, options, and weights live in `modules/quiz/` as typed data (`questions.ts`); scoring is a pure function (`scoring.ts` / `recommendPath()`) with comprehensive unit tests. There are no quiz tables in the database.
+- Use deterministic, rule-based scoring.
+- Do not make an external LLM/API a critical dependency for the core quiz. Core functionality must work offline from external AI services.
+- Because the quiz references path and skill slugs without foreign keys, there must be a validation check (script or test) ensuring every referenced slug exists in the database/seed. This check must run in CI or as part of the seed validation.
 
 ## 11.2 Scoring
 
@@ -681,7 +719,7 @@ Scoring rules must be:
 - deterministic
 - testable
 - explainable
-- stored in one domain module
+- stored in one domain module (`modules/quiz/scoring.ts`)
 
 ## 11.3 Recommendation transparency
 
@@ -700,20 +738,32 @@ Avoid pretending that a simple score is advanced artificial intelligence.
 
 # 12. State Management
 
-Use Zustand only for genuinely shared client state.
+Use Zustand only for genuinely shared client state and client-side persistence.
 
 Do not place server data into Zustand by default.
 
 Prefer:
 
 ```text
-URL state → filters/search
+URL state → filters/search, selected case
 Server data → Server Components / server cache
 Local state → component state
 Cross-cutting client state → Zustand
+Client-side persistence → Zustand persist (localStorage)
 ```
 
 Avoid making Zustand the application's universal data store.
+
+## 12.1 Client-side progress (Zustand `persist`)
+
+Visitors never log in. Path progress, bookmarks, and quiz results live in the browser (`localStorage` through Zustand `persist`), never in the database:
+
+- Use a versioned storage key (for example `karsaloka:v1:...`).
+- Validate data with Zod on rehydrate; discard and reset on invalid or outdated data instead of crashing.
+- No `localStorage` access during server rendering or before hydration; avoid hydration mismatches.
+- Provide a visible "reset progress" action in the UI.
+- Progress is keyed by stable identifiers (path slug and node id/skill slug), never array positions.
+- Never block core content behind stored state.
 
 ---
 
@@ -889,7 +939,7 @@ Especially:
 - case detail
 - quiz
 - graph
-- dashboard
+- path / progress view
 - admin tables
 
 ## 14.2 Touch targets
@@ -1105,17 +1155,35 @@ Client-side checks are UX checks, not security controls.
 
 # 20. Authentication & Admin
 
-The public explorer should minimize authentication friction.
+KarsaLoka enforces an **admin-only authentication model**. Visitors and learners never log in; there are no end-user accounts, user profiles, or public registration.
 
-Admin functionality must be protected independently from public UI visibility.
+## 20.1 Admin account management
 
-Hiding an admin link does **not** secure the route.
+- Admin accounts exist exclusively in the `AdminUser` table.
+- Admin accounts are created only through the database seed (`SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, minimum 12 characters).
+- There is no public registration route or signup flow.
 
-Admin mutations must verify authorization on the server.
+## 20.2 Password security
 
-Passwords must never be stored in plaintext.
+- Passwords are hashed using `bcryptjs`; plaintext passwords are never stored, logged, or exposed in client bundles.
+- Password hashing and verification logic must reside in a dedicated authentication module (`lib/auth/`), never scattered across routes or components.
 
-Use `bcryptjs` only through a dedicated authentication/security boundary; do not scatter password hashing logic throughout the project.
+## 20.3 Session management
+
+- The session is a cryptographically signed cookie (`jose`; `httpOnly`, `secure` in production, `SameSite=Lax`).
+- The cookie signing secret is supplied via an environment variable (`ADMIN_SESSION_SECRET`) and must never be committed.
+- Do not use Auth.js / NextAuth, and do not introduce database session tables.
+
+## 20.4 Authorization & verification
+
+- Hiding an admin link or route in UI does **not** secure the functionality.
+- **Every** admin Server Action and Route Handler must re-verify the session on the server before executing. A proxy or middleware check alone is not sufficient.
+- All admin mutations and writes must validate their input with Zod before touching Prisma.
+
+## 20.5 Rate limiting & enumeration prevention
+
+- Login attempts must be rate limited to prevent brute-force attacks.
+- Authentication error messages must remain generic (e.g., "Invalid email or password") and must never reveal whether an email address exists in the database.
 
 ---
 
@@ -1817,6 +1885,11 @@ Keep architectural decisions here when they materially affect the project.
 | 2026-10-04 | cobe for globe | Lightweight globe visualization aligned with Atlas concept | Team |
 | 2026-10-04 | Prisma + PostgreSQL | Structured relational data and maintainable server-side data access | Team |
 | 2026-10-04 | Rule-based quiz first | Deterministic, reliable, demonstrable without external AI dependency | Team |
+| 2026-10-04 | 10-table schema simplification | Reduced from 24 to 10 tables; native arrays for SDGs and tech; fewer forms and migrations | Team |
+| 2026-10-04 | No end-user login; client progress | Visitors explore without accounts; progress/bookmarks in localStorage via Zustand persist | Team |
+| 2026-10-04 | Quiz in code (`modules/quiz/`) | Static typed questions and pure scoring; zero DB queries; cross-validated against seed slugs | Team |
+| 2026-10-04 | Minimal admin auth | `AdminUser` table + signed session cookie (`jose`); no Auth.js, no session tables | Team |
+| 2026-10-04 | Globe uses `cobe` v2, not `react-globe.gl` | Lighter footprint; rAF rotation via `globe.update()`; logical CSS pixel dimensions | Team |
 
 New architectural decisions should be appended rather than silently replacing old ones.
 
@@ -1827,6 +1900,7 @@ New architectural decisions should be appended rather than silently replacing ol
 | Version | Date | Change |
 |---|---|---|
 | 1.0.0 | 2026-10-04 | Initial project engineering/design constitution |
+| 1.1.0 | 2026-10-04 | Sync with simplified, no-user-login design, 10-table database, and client-side progress per `docs/PROJECT_CONCEPT.md` |
 
 ---
 
