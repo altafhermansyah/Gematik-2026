@@ -1,0 +1,41 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model CaseStudy {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  country     String
+  lat         Float
+  lng         Float
+  sdgCategory String   // Climate, Health, Education, Disaster, Inclusion
+  summary     String   @db.Text
+  aiRole      String   @db.Text
+  impact      String   @db.Text
+  sourceUrl   String
+  createdAt   DateTime @default(now())
+}
+
+model SkillRoadmap {
+  id          String        @id @default(cuid())
+  trackCode   String        @unique // e.g. "AI-CLIMATE", "DATA-HEALTH"
+  title       String
+  description String        @db.Text
+  nodes       RoadmapNode[]
+}
+
+model RoadmapNode {
+  id          String       @id @default(cuid())
+  roadmapId   String
+  roadmap     SkillRoadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  label       String
+  category    String       // Foundation, Deep-Dive, Project
+  resourceUrl String
+  positionX   Float
+  positionY   Float
+}
