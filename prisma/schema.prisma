@@ -1,41 +1,427 @@
+// KarsaLoka — Prisma schema (PostgreSQL)
+// Ditulis untuk Prisma 7: URL database ada di prisma.config.ts, client memakai driver adapter (@prisma/adapter-pg).
+//
+// LocalizedText = Json berbentuk { "id": "...", "en": "..." }
+// Validasi pakai zod di sisi aplikasi. Fallback: en -> id.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
 datasource db {
   provider = "postgresql"
 }
 
-generator client {
-  provider = "prisma-client-js"
+// ───────────────────────── Enums ─────────────────────────
+
+enum Role {
+  USER
+  ADMIN
 }
 
-model CaseStudy {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  title       String
-  country     String
-  lat         Float
-  lng         Float
-  sdgCategory String   // Climate, Health, Education, Disaster, Inclusion
-  summary     String   @db.Text
-  aiRole      String   @db.Text
-  impact      String   @db.Text
-  sourceUrl   String
-  createdAt   DateTime @default(now())
+enum PublishStatus {
+  DRAFT
+  PUBLISHED
 }
 
-model SkillRoadmap {
-  id          String        @id @default(cuid())
-  trackCode   String        @unique // e.g. "AI-CLIMATE", "DATA-HEALTH"
-  title       String
-  description String        @db.Text
-  nodes       RoadmapNode[]
+enum Level {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
 }
 
-model RoadmapNode {
-  id          String       @id @default(cuid())
-  roadmapId   String
-  roadmap     SkillRoadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
-  label       String
-  category    String       // Foundation, Deep-Dive, Project
-  resourceUrl String
-  positionX   Float
-  positionY   Float
+enum NodeType {
+  CONCEPT
+  PRACTICE
+  PROJECT
+}
+
+enum ResourceType {
+  VIDEO
+  ARTICLE
+  COURSE
+  BOOK
+  DOCS
+  TOOL
+}
+
+enum QuestionKind {
+  SINGLE
+  MULTI
+}
+
+enum ProgressStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+// ───────────────────────── Auth (Auth.js / NextAuth adapter) ─────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String? // kalau pakai Credentials
+  role          Role      @default(USER)
+  locale        String    @default("id")
+  createdAt     DateTime  @default(now())
+
+  accounts     Account[]
+  sessions     Session[]
+  enrollments  Enrollment[]
+  progress     NodeProgress[]
+  bookmarks    Bookmark[]
+  skills       UserSkill[]
+  quizAttempts QuizAttempt[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ───────────────────────── Atlas: masalah & inovasi ─────────────────────────
+
+// Bidang: iklim, pangan, kesehatan, pendidikan, bencana, inklusi, dst.
+model Domain {
+  id    String @id @default(cuid())
+  slug  String @unique
+  name  Json // LocalizedText
+  color String // hex, dipakai untuk titik globe
+  icon  String?
+  order Int    @default(0)
+
+  cases Case[]
+  paths Path[]
+}
+
+// Satu studi kasus = satu titik di globe
+model Case {
+  id           String        @id @default(cuid())
+  slug         String        @unique
+  domainId     String
+  status       PublishStatus @default(DRAFT)
+  featured     Boolean       @default(false)
+
+  title        Json // LocalizedText
+  summary      Json // LocalizedText (1-2 kalimat untuk tooltip/kartu)
+  problem      Json // LocalizedText
+  solution     Json // LocalizedText
+  aiRole       Json // LocalizedText (peran AI/teknologi)
+  impact       Json // LocalizedText
+  metrics      Json? // [{ label: LocalizedText, value: number, unit: string }]
+
+  countryCode  String // ISO-2, contoh "ID"
+  region       String?
+  lat          Float
+  lng          Float
+  year         Int?
+  coverImage   String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  domain    Domain       @relation(fields: [domainId], references: [id])
+  sources      CaseSource[]
+  sdgs         CaseSdg[]
+  technologies CaseTech[]
+  paths        CasePath[]
+  bookmarks    Bookmark[]
+  attempts     QuizAttempt[]
+
+  @@index([status, domainId])
+  @@index([countryCode])
+}
+
+// Wajib ada minimal 1 sumber per kasus yang dipublikasikan
+model CaseSource {
+  id         String    @id @default(cuid())
+  caseId     String
+  title      String
+  publisher  String?
+  url        String
+  accessedAt DateTime?
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+}
+
+// SDG (1..17) dan tag teknologi dipisah jadi tabel (bukan array) supaya filter di Prisma sederhana
+model CaseSdg {
+  caseId String
+  sdg    Int
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@id([caseId, sdg])
+  @@index([sdg])
+}
+
+model CaseTech {
+  caseId String
+  tech   String // contoh "computer-vision", "iot"
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@id([caseId, tech])
+  @@index([tech])
+}
+
+// ───────────────────────── Roadmap: skill & jalur ─────────────────────────
+
+// Skill reusable, dipakai di banyak jalur
+model Skill {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        Json // LocalizedText
+  description Json? // LocalizedText
+  category    String? // contoh "ml", "data", "web", "domain-knowledge"
+
+  nodes       PathNode[]
+  resources   Resource[]
+  userSkills  UserSkill[]
+  signals     OptionSkillSignal[]
+}
+
+model Resource {
+  id       String       @id @default(cuid())
+  skillId  String
+  type     ResourceType
+  title    String
+  url      String
+  provider String?
+  lang     String       @default("en")
+  free     Boolean      @default(true)
+  order    Int          @default(0)
+
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@index([skillId])
+}
+
+// Satu jalur belajar = satu graph
+model Path {
+  id             String        @id @default(cuid())
+  slug           String        @unique
+  domainId       String?
+  status         PublishStatus @default(DRAFT)
+  level          Level         @default(BEGINNER)
+  title          Json // LocalizedText
+  description    Json // LocalizedText
+  estimatedHours Int?
+  coverImage     String?
+
+  domain      Domain?           @relation(fields: [domainId], references: [id])
+  nodes       PathNode[]
+  cases       CasePath[]
+  enrollments Enrollment[]
+  weights     OptionPathWeight[]
+  results     QuizAttempt[]
+}
+
+// Node di graph: satu skill dalam satu jalur
+model PathNode {
+  id             String   @id @default(cuid())
+  pathId         String
+  skillId        String
+  type           NodeType @default(CONCEPT)
+  order          Int // urutan linear (fallback tampilan list/mobile)
+  posX           Float? // posisi di canvas graph
+  posY           Float?
+  estimatedHours Int?
+  task           Json? // LocalizedText: tugas latihan/proyek spesifik node ini
+
+  path     Path           @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  skill    Skill          @relation(fields: [skillId], references: [id])
+  outgoing PathEdge[]     @relation("EdgeFrom")
+  incoming PathEdge[]     @relation("EdgeTo")
+  progress NodeProgress[]
+
+  @@unique([pathId, skillId])
+  @@index([pathId, order])
+}
+
+// Prasyarat: from -> to (to baru terbuka setelah from selesai)
+model PathEdge {
+  id     String @id @default(cuid())
+  fromId String
+  toId   String
+
+  from PathNode @relation("EdgeFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to   PathNode @relation("EdgeTo", fields: [toId], references: [id], onDelete: Cascade)
+
+  @@unique([fromId, toId])
+}
+
+// Jembatan Atlas -> Roadmap: "Mau ikut menyelesaikan ini?"
+model CasePath {
+  caseId    String
+  pathId    String
+  relevance Int    @default(1) // 1..3, untuk urutan rekomendasi
+  note      Json? // LocalizedText: kenapa jalur ini relevan untuk kasus ini
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  path Path @relation(fields: [pathId], references: [id], onDelete: Cascade)
+
+  @@id([caseId, pathId])
+}
+
+// ───────────────────────── Kuis diagnosa ─────────────────────────
+// Skoring rule-based:
+//   skor jalur = jumlah OptionPathWeight dari opsi yang dipilih
+//   skill yang sudah dikuasai = OptionSkillSignal.level (0..3) -> node dilewati/ditandai
+
+model QuizQuestion {
+  id     String       @id @default(cuid())
+  order  Int
+  kind   QuestionKind @default(SINGLE)
+  prompt Json // LocalizedText
+  helper Json? // LocalizedText
+  active Boolean      @default(true)
+
+  options QuizOption[]
+
+  @@index([active, order])
+}
+
+model QuizOption {
+  id         String @id @default(cuid())
+  questionId String
+  order      Int
+  label      Json // LocalizedText
+
+  question     QuizQuestion        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  pathWeights  OptionPathWeight[]
+  skillSignals OptionSkillSignal[]
+
+  @@index([questionId, order])
+}
+
+model OptionPathWeight {
+  optionId String
+  pathId   String
+  weight   Int    @default(1)
+
+  option QuizOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  path   Path       @relation(fields: [pathId], references: [id], onDelete: Cascade)
+
+  @@id([optionId, pathId])
+}
+
+model OptionSkillSignal {
+  optionId String
+  skillId  String
+  level    Int // 0 = belum, 1 = dasar, 2 = menengah, 3 = mahir
+
+  option QuizOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  skill  Skill      @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([optionId, skillId])
+}
+
+// Guest boleh ikut kuis: userId null, pakai sessionId dari cookie
+model QuizAttempt {
+  id           String   @id @default(cuid())
+  userId       String?
+  sessionId    String?
+  caseId       String? // kasus asal saat kuis dimulai
+  answers      Json // { [questionId]: optionId[] }
+  scores       Json // { [pathId]: number }
+  resultPathId String?
+  createdAt    DateTime @default(now())
+
+  user       User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  case       Case? @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  resultPath Path? @relation(fields: [resultPathId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([sessionId])
+}
+
+// ───────────────────────── Progress user ─────────────────────────
+
+// Level skill hasil kuis atau penilaian mandiri
+model UserSkill {
+  userId  String
+  skillId String
+  level   Int    @default(0) // 0..3
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([userId, skillId])
+}
+
+model Enrollment {
+  id          String    @id @default(cuid())
+  userId      String
+  pathId      String
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  path Path @relation(fields: [pathId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, pathId])
+}
+
+model NodeProgress {
+  id        String         @id @default(cuid())
+  userId    String
+  nodeId    String
+  status    ProgressStatus @default(TODO)
+  updatedAt DateTime       @updatedAt
+
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  node PathNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, nodeId])
+  @@index([userId])
+}
+
+model Bookmark {
+  userId    String
+  caseId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@id([userId, caseId])
 }
