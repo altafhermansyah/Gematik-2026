@@ -1,32 +1,33 @@
-// src/app/atlas/page.tsx
-import { prisma } from "@/lib/prisma";
-import AtlasGlobe from "@/components/globe/AtlasGlobe";
+import type { Metadata } from "next";
+import { getAtlasCases } from "@/modules/atlas/queries";
+import AtlasExplorer from "@/components/atlas/AtlasExplorer";
 
-type Localized = { id: string; en: string };
+export const metadata: Metadata = {
+  title: "Atlas Inovasi Global | KarsaLoka",
+  description:
+    "Jelajahi inovasi teknologi dan peran AI dalam menyelesaikan tantangan global.",
+};
 
-export default async function AtlasPage() {
-  const cases = await prisma.case.findMany({
-    where: { status: "PUBLISHED" },
-    select: {
-      slug: true,
-      title: true,
-      lat: true,
-      lng: true,
-      domain: { select: { color: true } },
-    },
-  });
+type AtlasPageProps = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
 
-  const points = cases.map((c) => ({
-    slug: c.slug,
-    title: (c.title as Localized).id,
-    lat: c.lat,
-    lng: c.lng,
-    color: c.domain.color,
-  }));
+export default async function AtlasPage({ searchParams }: AtlasPageProps) {
+  const cases = await getAtlasCases();
+  const resolvedParams = await searchParams;
+  const rawCaseSlug = resolvedParams.case;
+  const caseSlug = typeof rawCaseSlug === "string" ? rawCaseSlug : null;
+
+  // Only pass initialSelectedSlug if it exists in the validated cases dataset
+  const initialSelectedSlug =
+    caseSlug && cases.some((c) => c.slug === caseSlug) ? caseSlug : null;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 p-6">
-      <AtlasGlobe points={points} />
+    <main className="min-h-screen bg-slate-950 text-slate-100">
+      <AtlasExplorer
+        cases={cases}
+        initialSelectedSlug={initialSelectedSlug}
+      />
     </main>
   );
 }

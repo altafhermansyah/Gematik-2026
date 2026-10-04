@@ -23,7 +23,7 @@ Proyek berada pada tahap awal pengembangan (versi `0.1.0`). Skema basis data unt
 
 - **Skema basis data lengkap** di [`prisma/schema.prisma`](prisma/schema.prisma) untuk domain atlas (bidang, studi kasus, sumber, SDG, tag teknologi), jalur keahlian (skill, node, prasyarat, sumber belajar), kuis diagnosis berbasis aturan (pertanyaan, opsi, bobot jalur, sinyal skill), progres pengguna, bookmark, serta model autentikasi bergaya Auth.js. Konten teks yang dilokalkan disimpan sebagai JSON `{ "id": "...", "en": "..." }`.
 - **Halaman atlas (`/atlas`)** berupa Server Component yang mengambil studi kasus berstatus `PUBLISHED` dari basis data dan meneruskannya ke komponen globe.
-- **Komponen globe interaktif** ([`AtlasGlobe.tsx`](src/components/globe/AtlasGlobe.tsx)) berbasis `cobe` dengan rotasi otomatis, rotasi melalui drag (pointer dan sentuh), marker berwarna sesuai bidang, serta label marker yang diposisikan dengan CSS Anchor Positioning dan disembunyikan ketika marker berada di sisi belakang globe.
+- **Komponen globe interaktif** ([`AtlasGlobe.tsx`](src/components/atlas/AtlasGlobe.tsx)) berbasis `cobe` dengan rotasi otomatis, rotasi melalui drag (pointer dan sentuh), marker berwarna sesuai bidang, serta label marker yang diposisikan dengan CSS Anchor Positioning dan disembunyikan ketika marker berada di sisi belakang globe.
 
 ### Sebagian atau belum berfungsi
 
@@ -87,7 +87,7 @@ Prinsip yang sudah diterapkan pada kode yang ada:
 │   │   ├── layout.tsx               Root layout
 │   │   └── page.tsx                 Halaman beranda (masih template)
 │   ├── components/
-│   │   └── globe/AtlasGlobe.tsx     Globe interaktif berbasis cobe
+│   │   └── atlas/AtlasGlobe.tsx     Globe interaktif berbasis cobe
 │   ├── generated/prisma/            Prisma Client hasil generate (diabaikan Git)
 │   └── lib/
 │       └── prisma.ts                Instans tunggal Prisma Client
