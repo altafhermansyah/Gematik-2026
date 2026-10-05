@@ -1,7 +1,9 @@
 // prisma/seed.ts
-// Jalankan: npx prisma db seed   (seed sudah didaftarkan di prisma.config.ts)
-// npm i @prisma/client@7 @prisma/adapter-pg pg bcryptjs dotenv
-// npm i -D prisma@7 tsx typescript @types/bcryptjs @types/node @types/pg
+// Jalankan: npx prisma db seed   (didaftarkan di prisma.config.ts -> migrations.seed)
+// Dependensi: @prisma/client@7 @prisma/adapter-pg pg bcryptjs dotenv | dev: prisma@7 tsx @types/bcryptjs @types/pg
+//
+// Seed menghapus SEMUA data konten (kasus, jalur, skill, domain) lalu mengisinya ulang.
+// AdminUser tidak dihapus. Kuis tidak ada di sini: kuis berada di kode (modules/quiz).
 
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -11,9 +13,7 @@ import {
   Level,
   NodeType,
   PublishStatus,
-  QuestionKind,
   ResourceType,
-  Role,
 } from "../src/generated/prisma/client";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
@@ -21,7 +21,7 @@ const prisma = new PrismaClient({ adapter });
 const t = (id: string, en: string) => ({ id, en });
 
 async function wipeContent() {
-  await prisma.quizQuestion.deleteMany();
+  // Urutan penting: Case dan Path dulu (cascade ke relasi turunannya), baru Skill dan Domain.
   await prisma.case.deleteMany();
   await prisma.path.deleteMany();
   await prisma.skill.deleteMany();
@@ -37,12 +37,12 @@ async function seedDomains() {
     { slug: "disaster", name: t("Kebencanaan", "Disaster Resilience"), color: "#fb923c" },
     { slug: "inclusion", name: t("Inklusi Sosial", "Social Inclusion"), color: "#a78bfa" },
   ];
-  const map: Record<string, string> = {};
-  for (const [i, d] of data.entries()) {
-    const row = await prisma.domain.create({ data: { ...d, order: i } });
-    map[d.slug] = row.id;
+  const ids: Record<string, string> = {};
+  for (const [order, d] of data.entries()) {
+    const row = await prisma.domain.create({ data: { ...d, order } });
+    ids[d.slug] = row.id;
   }
-  return map;
+  return ids;
 }
 
 async function seedSkills() {
@@ -97,15 +97,15 @@ async function seedSkills() {
       ],
     },
   ];
-  const map: Record<string, string> = {};
+  const ids: Record<string, string> = {};
   for (const s of data) {
     const { resources, ...rest } = s;
     const row = await prisma.skill.create({
       data: { ...rest, resources: { create: resources.map((r, order) => ({ ...r, order })) } },
     });
-    map[s.slug] = row.id;
+    ids[s.slug] = row.id;
   }
-  return map;
+  return ids;
 }
 
 async function seedPath(skills: Record<string, string>) {
@@ -142,7 +142,7 @@ async function seedPath(skills: Record<string, string>) {
     },
   ];
 
-  const nodeId: Record<string, string> = {};
+  const nodeIds: Record<string, string> = {};
   for (const [order, n] of nodes.entries()) {
     const row = await prisma.pathNode.create({
       data: {
@@ -156,7 +156,7 @@ async function seedPath(skills: Record<string, string>) {
         task: n.task,
       },
     });
-    nodeId[n.skill] = row.id;
+    nodeIds[n.skill] = row.id;
   }
 
   const edges: [string, string][] = [
@@ -168,13 +168,14 @@ async function seedPath(skills: Record<string, string>) {
     ["responsible-ai", "applied-project"],
   ];
   await prisma.pathEdge.createMany({
-    data: edges.map(([from, to]) => ({ fromId: nodeId[from], toId: nodeId[to] })),
+    data: edges.map(([from, to]) => ({ fromId: nodeIds[from], toId: nodeIds[to] })),
   });
 
   return path;
 }
 
-// PENTING: ganti metrics/koordinat/klaim dampak dengan data yang sudah kalian verifikasi dari sumbernya.
+// PENTING: contoh ini sengaja kualitatif tanpa angka. Verifikasi setiap klaim, koordinat, dan
+// metrics dengan sumbernya sebelum dipublikasikan.
 async function seedCases(domains: Record<string, string>, pathId: string) {
   const alphafold = await prisma.case.create({
     data: {
@@ -208,8 +209,8 @@ async function seedCases(domains: Record<string, string>, pathId: string) {
       lat: 52.08,
       lng: 0.19,
       year: 2021,
-      sdgs: { create: [3, 9].map((sdg) => ({ sdg })) },
-      technologies: { create: ["deep-learning", "bioinformatics"].map((tech) => ({ tech })) },
+      sdgs: [3, 9],
+      technologies: ["deep-learning", "bioinformatics"],
       sources: {
         create: [
           {
@@ -257,8 +258,8 @@ async function seedCases(domains: Record<string, string>, pathId: string) {
       region: "Sumatra", // TODO: ganti dengan lokasi deployment yang terverifikasi
       lat: -1.6,
       lng: 103.6,
-      sdgs: { create: [13, 15].map((sdg) => ({ sdg })) },
-      technologies: { create: ["audio-classification", "iot"].map((tech) => ({ tech })) },
+      sdgs: [13, 15],
+      technologies: ["audio-classification", "iot"],
       sources: {
         create: [
           {
@@ -295,91 +296,45 @@ async function seedCases(domains: Record<string, string>, pathId: string) {
   });
 }
 
-// Catatan: dengan 1 jalur, bobot tidak membedakan hasil. Tambahkan jalur lain agar skoring terasa.
-async function seedQuiz(skills: Record<string, string>, pathId: string) {
-  await prisma.quizQuestion.create({
-    data: {
-      order: 1,
-      kind: QuestionKind.SINGLE,
-      prompt: t("Seberapa nyaman kamu dengan pemrograman?", "How comfortable are you with programming?"),
-      options: {
-        create: [
-          { order: 1, label: t("Belum pernah coding", "Never coded"), skillSignals: { create: [{ skillId: skills["python-basics"], level: 0 }] } },
-          { order: 2, label: t("Pernah mencoba dasar-dasarnya", "Tried the basics"), skillSignals: { create: [{ skillId: skills["python-basics"], level: 1 }] } },
-          { order: 3, label: t("Cukup nyaman membuat program kecil", "Comfortable building small programs"), skillSignals: { create: [{ skillId: skills["python-basics"], level: 2 }] } },
-          { order: 4, label: t("Coding hampir setiap hari", "I code almost daily"), skillSignals: { create: [{ skillId: skills["python-basics"], level: 3 }] } },
-        ],
-      },
-    },
-  });
-
-  await prisma.quizQuestion.create({
-    data: {
-      order: 2,
-      kind: QuestionKind.SINGLE,
-      prompt: t("Bagaimana pengalamanmu dengan data dan machine learning?", "What is your experience with data and machine learning?"),
-      options: {
-        create: [
-          { order: 1, label: t("Belum ada", "None yet"), skillSignals: { create: [
-            { skillId: skills["data-wrangling"], level: 0 },
-            { skillId: skills["ml-fundamentals"], level: 0 },
-          ] } },
-          { order: 2, label: t("Pernah mengolah data (Excel/pandas)", "Have worked with data (Excel/pandas)"), skillSignals: { create: [
-            { skillId: skills["data-wrangling"], level: 2 },
-            { skillId: skills["ml-fundamentals"], level: 0 },
-          ] } },
-          { order: 3, label: t("Pernah melatih model sederhana", "Have trained a simple model"), skillSignals: { create: [
-            { skillId: skills["data-wrangling"], level: 2 },
-            { skillId: skills["ml-fundamentals"], level: 2 },
-            { skillId: skills["model-evaluation"], level: 1 },
-          ] } },
-          { order: 4, label: t("Pernah membangun dan mengevaluasi model end-to-end", "Have built and evaluated a model end-to-end"), skillSignals: { create: [
-            { skillId: skills["data-wrangling"], level: 3 },
-            { skillId: skills["ml-fundamentals"], level: 3 },
-            { skillId: skills["model-evaluation"], level: 2 },
-          ] } },
-        ],
-      },
-    },
-  });
-
-  const interests = [
-    t("Iklim & lingkungan", "Climate & environment"),
-    t("Kesehatan & sains", "Health & science"),
-    t("Pangan & pertanian", "Food & agriculture"),
-    t("Pendidikan", "Education"),
-  ];
-  await prisma.quizQuestion.create({
-    data: {
-      order: 3,
-      kind: QuestionKind.MULTI,
-      prompt: t("Masalah apa yang paling ingin kamu bantu selesaikan?", "Which problems do you most want to help solve?"),
-      helper: t("Boleh pilih lebih dari satu.", "You can pick more than one."),
-      options: {
-        create: interests.map((label, i) => ({
-          order: i + 1,
-          label,
-          pathWeights: { create: [{ pathId, weight: 1 }] },
-        })),
-      },
-    },
+async function seedAdmin() {
+  const email = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
+  const password = process.env.SEED_ADMIN_PASSWORD;
+  if (!email || !password) {
+    console.log("SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD tidak diisi: pembuatan admin dilewati.");
+    return;
+  }
+  if (password.length < 12) {
+    throw new Error("SEED_ADMIN_PASSWORD minimal 12 karakter.");
+  }
+  const passwordHash = await bcrypt.hash(password, 12);
+  await prisma.adminUser.upsert({
+    where: { email },
+    update: { passwordHash },
+    create: { email, passwordHash },
   });
 }
 
-async function seedAdmin() {
-  const email = process.env.SEED_ADMIN_EMAIL;
-  const password = process.env.SEED_ADMIN_PASSWORD;
-  if (!email || !password) return;
-  const passwordHash = await bcrypt.hash(password, 10);
-  await prisma.user.upsert({
-    where: { email },
-    update: { role: Role.ADMIN, passwordHash },
-    create: { email, name: "Admin", role: Role.ADMIN, passwordHash },
+// Aturan yang tidak bisa dijaga oleh skema: gagal keras agar data buruk tidak lolos diam-diam.
+async function assertIntegrity() {
+  const withoutSources = await prisma.case.findMany({
+    where: { status: PublishStatus.PUBLISHED, sources: { none: {} } },
+    select: { slug: true },
   });
+  if (withoutSources.length > 0) {
+    throw new Error(
+      `Kasus PUBLISHED tanpa sumber: ${withoutSources.map((c) => c.slug).join(", ")}`
+    );
+  }
+
+  const edges = await prisma.pathEdge.findMany({
+    select: { from: { select: { pathId: true } }, to: { select: { pathId: true } } },
+  });
+  if (edges.some((e) => e.from.pathId !== e.to.pathId)) {
+    throw new Error("Ada PathEdge yang menghubungkan node dari jalur berbeda.");
+  }
 }
 
 async function main() {
-  // Seed menghapus semua data konten (bukan user) sebelum mengisi ulang
   if (process.env.NODE_ENV === "production" && !process.env.SEED_ALLOW_WIPE) {
     throw new Error("Seed menghapus data konten. Set SEED_ALLOW_WIPE=1 jika memang disengaja.");
   }
@@ -388,8 +343,8 @@ async function main() {
   const skills = await seedSkills();
   const path = await seedPath(skills);
   await seedCases(domains, path.id);
-  await seedQuiz(skills, path.id);
   await seedAdmin();
+  await assertIntegrity();
   console.log("Seed selesai.");
 }
 

@@ -17,28 +17,28 @@ Isu global -> Eksplorasi atlas -> Studi kasus inovasi -> Kuis diagnosis -> Jalur
 
 ## Status Pengembangan
 
-Proyek berada pada tahap awal pengembangan (versi `0.1.0`). Skema basis data untuk seluruh domain sudah dirancang, tetapi sebagian besar fitur antarmuka belum diimplementasikan. Bagian berikut membedakan fitur yang sudah ada di repositori dan fitur yang masih direncanakan.
+Proyek berada pada tahap awal pengembangan (versi `0.1.0`). Skema basis data 10 tabel sudah dirancang dan dimigrasikan. Bagian berikut membedakan fitur yang sudah ada di repositori dan fitur yang masih direncanakan.
 
 ### Sudah diimplementasikan
 
-- **Skema basis data lengkap** di [`prisma/schema.prisma`](prisma/schema.prisma) untuk domain atlas (bidang, studi kasus, sumber, SDG, tag teknologi), jalur keahlian (skill, node, prasyarat, sumber belajar), kuis diagnosis berbasis aturan (pertanyaan, opsi, bobot jalur, sinyal skill), progres pengguna, bookmark, serta model autentikasi bergaya Auth.js. Konten teks yang dilokalkan disimpan sebagai JSON `{ "id": "...", "en": "..." }`.
-- **Halaman atlas (`/atlas`)** berupa Server Component yang mengambil studi kasus berstatus `PUBLISHED` dari basis data dan meneruskannya ke komponen globe.
-- **Komponen globe interaktif** ([`AtlasGlobe.tsx`](src/components/atlas/AtlasGlobe.tsx)) berbasis `cobe` dengan rotasi otomatis, rotasi melalui drag (pointer dan sentuh), marker berwarna sesuai bidang, serta label marker yang diposisikan dengan CSS Anchor Positioning dan disembunyikan ketika marker berada di sisi belakang globe.
+- **Skema basis data 10 tabel** di [`prisma/schema.prisma`](prisma/schema.prisma) untuk domain atlas (`Domain`, `Case`, `CaseSource`), jalur keahlian (`Path`, `PathNode`, `PathEdge`, `Skill`, `Resource`), jembatan (`CasePath`), dan akun admin (`AdminUser`). Progres belajar, bookmark, dan hasil kuis disimpan di sisi klien (`localStorage` lewat Zustand `persist`). Kuis berada di kode (`modules/quiz`). Konten teks yang dilokalkan disimpan sebagai JSON `{ "id": "...", "en": "..." }` dan divalidasi dengan Zod.
+- **Data awal (seed)** di [`prisma/seed.ts`](prisma/seed.ts) berisi data studi kasus terverifikasi, domain, jalur belajar, node graph, skill, resource, dan akun admin awal.
+- **Halaman atlas (`/atlas`)** berupa Server Component yang mengambil studi kasus berstatus `PUBLISHED` dari basis data dan meneruskannya ke komponen globe dan daftar.
+- **Komponen globe interaktif** ([`AtlasGlobe.tsx`](src/components/atlas/AtlasGlobe.tsx)) berbasis `cobe` dengan rotasi otomatis, rotasi melalui drag (pointer dan sentuh), marker berwarna sesuai bidang, panel studi kasus, dan daftar alternatif yang dapat diakses keyboard.
 
 ### Sebagian atau belum berfungsi
 
-- Label marker mengarah ke `/cases/[slug]`, tetapi rute tersebut **belum ada**, sehingga saat ini menghasilkan halaman 404.
-- Halaman beranda (`/`) dan metadata di [`layout.tsx`](src/app/layout.tsx) masih berupa template bawaan `create-next-app`.
-- Belum tersedia data awal (seed), sehingga globe tidak menampilkan marker sampai data studi kasus dimasukkan secara manual.
+- Label marker mengarah ke `/cases/[slug]`, tetapi rute detail tersebut **sedang disiapkan**.
+- Halaman beranda (`/`) dan metadata di [`layout.tsx`](src/app/layout.tsx) masih berupa template awal.
 
 ### Direncanakan
 
-- Filter dan pencarian studi kasus pada atlas, beserta tampilan daftar sebagai alternatif globe yang dapat diakses dengan keyboard.
+- Filter dan pencarian studi kasus pada atlas via parameter URL.
 - Halaman detail studi kasus (masalah, inovasi, peran AI/teknologi, dampak, dan sumber).
-- Kuis diagnosis dengan skoring deterministik berbasis aturan.
-- Visualisasi jalur keahlian dengan `@xyflow/react` dan pelacakan progres.
+- Kuis diagnosis dengan skoring deterministik berbasis aturan (`modules/quiz`).
+- Visualisasi jalur keahlian dengan `@xyflow/react` dan pelacakan progres lokal di browser.
 - Antarmuka admin untuk mengelola studi kasus dan jalur keahlian.
-- Autentikasi pengguna dan admin.
+- Autentikasi sesi admin (pengunjung tidak memerlukan login).
 
 ## Teknologi
 
@@ -52,12 +52,12 @@ Tabel berikut hanya mencantumkan dependensi langsung yang terdaftar di [`package
 | Basis data | PostgreSQL | Digunakan |
 | ORM | Prisma 7, generator `prisma-client`, driver adapter `@prisma/adapter-pg` | Digunakan |
 | Globe | `cobe` 2 | Digunakan |
-| Graf jalur keahlian | `@xyflow/react` | Terpasang, belum digunakan |
-| Animasi | `framer-motion` | Terpasang, belum digunakan |
-| State klien | `zustand` | Terpasang, belum digunakan |
-| Validasi | `zod` | Terpasang, belum digunakan |
-| Hashing kata sandi | `bcryptjs` | Terpasang, belum digunakan |
-| Utilitas | `clsx`, `tailwind-merge`, `lucide-react` | Terpasang, belum digunakan |
+| Graf jalur keahlian | `@xyflow/react` | Terpasang |
+| Animasi | `framer-motion` | Terpasang |
+| State klien | `zustand` (`persist` untuk progres lokal) | Terpasang |
+| Validasi | `zod` | Digunakan |
+| Hashing kata sandi | `bcryptjs` | Digunakan (AdminUser seed) |
+| Utilitas | `clsx`, `tailwind-merge`, `lucide-react` | Digunakan |
 | Linting | ESLint 9 dengan `eslint-config-next` | Digunakan |
 
 ## Arsitektur
@@ -77,21 +77,25 @@ Prinsip yang sudah diterapkan pada kode yang ada:
 .
 ├── .ai/
 │   └── KARSALOKA_PROJECT_RULES.md   Standar rekayasa dan desain proyek
+├── docs/
+│   └── PROJECT_CONCEPT.md           Konsep produk, peta halaman, dan tanggung jawab tabel
 ├── prisma/
-│   └── schema.prisma                Skema basis data PostgreSQL
+│   ├── migrations/                  Riwayat migrasi Prisma
+│   ├── schema.prisma                Skema basis data PostgreSQL (10 tabel)
+│   └── seed.ts                      Skrip pengisian data awal terverifikasi
 ├── public/                          Aset statis
 ├── src/
 │   ├── app/
 │   │   ├── atlas/page.tsx           Halaman atlas (Server Component)
 │   │   ├── globals.css              Entri Tailwind CSS dan token warna dasar
 │   │   ├── layout.tsx               Root layout
-│   │   └── page.tsx                 Halaman beranda (masih template)
+│   │   └── page.tsx                 Halaman beranda
 │   ├── components/
 │   │   └── atlas/AtlasGlobe.tsx     Globe interaktif berbasis cobe
 │   ├── generated/prisma/            Prisma Client hasil generate (diabaikan Git)
 │   └── lib/
 │       └── prisma.ts                Instans tunggal Prisma Client
-├── prisma7.config.ts                Konfigurasi Prisma CLI (schema, migrasi, URL basis data)
+├── prisma.config.ts                 Konfigurasi Prisma CLI (schema, migrasi, seed, URL)
 ├── AGENTS.md                        Instruksi untuk agen AI terkait versi Next.js
 ├── next.config.ts
 ├── eslint.config.mjs
@@ -99,84 +103,96 @@ Prinsip yang sudah diterapkan pada kode yang ada:
 └── tsconfig.json                    Alias impor `@/*` mengarah ke `src/*`
 ```
 
-Direktori `prisma/migrations/` dan berkas seed belum ada di repositori.
-
 ## Prasyarat
 
-- **Node.js** versi `^20.19`, `^22.12`, atau `>=24.0`. Rentang ini adalah irisan kebutuhan Next.js 16 (`>=20.9.0`) dan Prisma 7. Proyek belum menetapkan versi Node.js melalui `engines` atau `.nvmrc`.
+- **Node.js** versi `^20.19`, `^22.12`, atau `>=24.0`. Rentang ini adalah irisan kebutuhan Next.js 16 (`>=20.9.0`) dan Prisma 7.
 - **npm**, sesuai lockfile `package-lock.json` yang tersedia.
 - **PostgreSQL** yang dapat diakses dari mesin lokal, baik instalasi lokal, kontainer, maupun layanan terkelola.
 
 ## Instalasi dan Pengembangan Lokal
 
-1. Clone repositori dan masuk ke direktorinya.
+1. Clone repositori dan masuk ke direktorinya:
 
    ```bash
    git clone https://github.com/altafhermansyah/Gematik-2026
    cd Gematik-2026
    ```
 
-2. Buat berkas `.env` di root proyek. Lakukan ini sebelum instalasi karena skrip `postinstall` menjalankan `prisma generate` yang membaca konfigurasi Prisma.
-
-   ```env
-   DATABASE_URL="postgresql://<user>:<password>@localhost:5432/<nama_database>?schema=public"
-   ```
-
-3. Buat basis data kosong di PostgreSQL sesuai nama yang dipakai pada `DATABASE_URL`.
-
-4. Instal dependensi. Prisma Client akan otomatis digenerate ke `src/generated/prisma`.
+2. Instal dependensi:
 
    ```bash
    npm install
    ```
 
-5. Terapkan skema ke basis data. Karena repositori belum memiliki migrasi, perintah ini akan membuat migrasi awal di `prisma/migrations/`.
+3. Siapkan berkas `.env` dari `.env.example`:
 
    ```bash
-   npm run db:migrate -- --name init
+   cp .env.example .env
    ```
 
-   Migrasi awal sebaiknya dibuat oleh satu anggota tim lalu di-commit, sehingga anggota lain cukup menjalankan `npm run db:migrate` untuk menerapkannya. Lihat bagian [Alur Kerja Basis Data](#alur-kerja-basis-data) bila basis data lokal sebelumnya disiapkan dengan `prisma db push`.
+   Isi variabel di `.env`:
 
-6. Jalankan server pengembangan.
+   ```env
+   DATABASE_URL="postgresql://<user>:<password>@localhost:5432/<nama_database>?schema=public"
+   SEED_ADMIN_EMAIL="admin@karsaloka.id"
+   SEED_ADMIN_PASSWORD="supersecretpassword123"
+   ```
+
+4. Jalankan migrasi basis data dan generate client:
+
+   ```bash
+   npx prisma migrate dev
+   npx prisma generate
+   ```
+
+5. Isi data awal (seed) studi kasus, domain, jalur, skill, materi, dan akun admin:
+
+   ```bash
+   npx prisma db seed
+   ```
+
+6. Jalankan server pengembangan:
 
    ```bash
    npm run dev
    ```
 
-7. Buka `http://localhost:3000/atlas` di browser. Rute `/` masih menampilkan halaman template.
+7. Buka `http://localhost:3000/atlas` di browser.
 
 ## Variabel Lingkungan
 
+Contoh konfigurasi tersedia di [`.env.example`](.env.example).
+
 | Variabel | Wajib | Digunakan oleh | Keterangan |
 |---|---|---|---|
-| `DATABASE_URL` | Ya | `prisma7.config.ts`, `src/lib/prisma.ts` | String koneksi PostgreSQL untuk Prisma CLI dan Prisma Client (melalui `@prisma/adapter-pg`). |
+| `DATABASE_URL` | Ya | `prisma.config.ts`, `src/lib/prisma.ts` | String koneksi PostgreSQL untuk Prisma CLI dan Prisma Client (`@prisma/adapter-pg`). |
+| `SEED_ADMIN_EMAIL` | Ya (saat seed) | `prisma/seed.ts` | Email untuk akun awal administrator. |
+| `SEED_ADMIN_PASSWORD` | Ya (saat seed) | `prisma/seed.ts` | Kata sandi untuk akun administrator (minimal 12 karakter, di-hash bcrypt). |
 
 Catatan:
 
-- Semua berkas `.env*` diabaikan oleh Git melalui `.gitignore`. Jangan pernah meng-commit kredensial.
-- Repositori belum menyediakan `.env.example`; gunakan contoh di atas sebagai acuan.
-- `NODE_ENV` diatur otomatis oleh Next.js dan tidak perlu didefinisikan manual.
+- Semua berkas `.env*` (kecuali `.env.example`) diabaikan oleh Git melalui `.gitignore`. Jangan pernah meng-commit kredensial.
+- `NODE_ENV` diatur otomatis oleh Next.js.
 
 ## Alur Kerja Basis Data
 
-Konfigurasi Prisma CLI berada di [`prisma7.config.ts`](prisma7.config.ts). Berkas ini memuat `.env` melalui `dotenv`, menunjuk skema `prisma/schema.prisma`, direktori migrasi `prisma/migrations`, dan mengambil URL dari `DATABASE_URL`. Sesuai konvensi Prisma 7, blok `datasource` di skema tidak memuat `url`.
+Konfigurasi Prisma CLI berada di [`prisma.config.ts`](prisma.config.ts). Berkas ini memuat `.env` melalui `dotenv`, menunjuk skema `prisma/schema.prisma`, direktori migrasi `prisma/migrations`, konfigurasi seed `tsx prisma/seed.ts`, dan mengambil URL dari `DATABASE_URL`.
 
 | Tujuan | Perintah |
 |---|---|
-| Generate Prisma Client | `npx prisma generate` (juga dijalankan otomatis oleh `npm install` dan `npm run build`) |
+| Generate Prisma Client | `npx prisma generate` (juga otomatis via `postinstall` dan `build`) |
 | Validasi skema | `npx prisma validate` |
-| Membuat dan menerapkan migrasi saat pengembangan | `npm run db:migrate` |
+| Membuat dan menerapkan migrasi saat pengembangan | `npm run db:migrate` (`prisma migrate dev && prisma generate`) |
+| Mengisi data awal | `npm run db:seed` (`prisma db seed`) |
 | Melihat status migrasi | `npx prisma migrate status` |
 | Menerapkan migrasi di lingkungan produksi | `npx prisma migrate deploy` |
 | Membuka Prisma Studio | `npm run db:studio` |
 
 Hal yang perlu diperhatikan:
 
-- **Generate, migrasi, dan seed adalah langkah terpisah.** Generate hanya memperbarui kode Prisma Client; migrasi mengubah struktur basis data; seed mengisi data.
-- **Seed belum tersedia.** Skrip `npm run db:seed` terdaftar di `package.json`, tetapi `prisma7.config.ts` belum mendefinisikan `migrations.seed` dan belum ada berkas seed, sehingga perintah ini belum dapat digunakan. Untuk sementara, data dapat dimasukkan melalui Prisma Studio.
-- **Basis data yang disiapkan dengan `prisma db push`** tidak dikelola oleh Prisma Migrate. Menjalankan `prisma migrate dev` pada basis data tersebut akan mendeteksi perbedaan riwayat dan dapat meminta reset yang **menghapus seluruh data**. Cadangkan data penting terlebih dahulu, atau gunakan basis data baru.
-- **Jangan menjalankan `prisma migrate reset`** pada basis data bersama atau yang berisi data penting, karena perintah ini menghapus seluruh data.
+- **Jangan gunakan `prisma db push`** pada basis data bersama. Seluruh perubahan skema wajib melalui `prisma migrate dev`.
+- **Integritas seed:** seed menghapus tabel konten namun **tidak pernah menghapus `AdminUser`**. Seed menolak dijalankan di produksi kecuali `SEED_ALLOW_WIPE=1`.
+- **Prisma 7:** `migrate dev` tidak meregenerate client secara otomatis; skrip `npm run db:migrate` menjalankan `prisma migrate dev && prisma generate`.
 - Jangan mengubah migrasi yang sudah diterapkan. Buat migrasi baru untuk setiap perubahan skema.
 
 ## Perintah Pengembangan
@@ -187,62 +203,56 @@ Hal yang perlu diperhatikan:
 | `npm run build` | Menjalankan `prisma generate` lalu `next build` |
 | `npm run start` | Menjalankan hasil build produksi |
 | `npm run lint` | Menjalankan ESLint |
-| `npx tsc --noEmit` | Pemeriksaan tipe TypeScript (belum ada skrip khusus) |
-| `npm run db:migrate` | `prisma migrate dev` |
-| `npm run db:seed` | `prisma db seed` (belum berfungsi, lihat catatan di atas) |
-| `npm run db:studio` | `prisma studio` |
+| `npm run typecheck` | Menjalankan pemeriksaan tipe TypeScript (`tsc --noEmit`) |
+| `npm run db:migrate` | `prisma migrate dev && prisma generate` |
+| `npm run db:seed` | Mengisi data awal (`prisma db seed`) |
+| `npm run db:studio` | Membuka Prisma Studio |
 
 ## Konvensi Pengembangan
 
-Standar lengkap tercantum di [`.ai/KARSALOKA_PROJECT_RULES.md`](.ai/KARSALOKA_PROJECT_RULES.md) dan wajib dibaca sebelum berkontribusi. Ringkasannya:
+Standar lengkap tercantum di [`.ai/KARSALOKA_PROJECT_RULES.md`](.ai/KARSALOKA_PROJECT_RULES.md) dan [`docs/PROJECT_CONCEPT.md`](docs/PROJECT_CONCEPT.md), wajib dibaca sebelum berkontribusi. Ringkasannya:
 
 - **Server Component sebagai bawaan.** Gunakan `"use client"` hanya untuk bagian yang membutuhkan API browser, state interaktif, atau WebGL.
-- **Akses data** melalui instans `prisma` di `src/lib/prisma.ts`. Jangan membuat `PrismaClient` baru per request atau per komponen, dan jangan menaruh query di komponen presentasional yang dapat dipakai ulang.
+- **Akses data** melalui instans `prisma` di `src/lib/prisma.ts`. Jangan membuat `PrismaClient` baru per request atau per komponen.
 - **TypeScript ketat.** Hindari `any`, `@ts-ignore`, dan `@ts-expect-error` tanpa alasan terdokumentasi.
-- **Validasi runtime** dengan Zod untuk setiap input dari pengguna atau sumber eksternal.
-- **Styling** dengan Tailwind CSS; gunakan `clsx` dan `tailwind-merge` untuk komposisi kelas kondisional. Token desain dipusatkan, bukan ditulis acak per komponen.
-- **Konten studi kasus** harus memiliki sumber yang dapat diverifikasi. Statistik dan klaim dampak tidak boleh dikarang.
+- **Validasi runtime** dengan Zod untuk setiap input dari pengguna, form admin, atau Json database.
+- **Tanpa login pengguna.** Pengunjung menikmati seluruh konten tanpa login. Progres, bookmark, dan kuis disimpan di `localStorage` via Zustand `persist`.
+- **Kuis berbasis kode.** Kuis dan scoring berada di `modules/quiz`, bukan tabel database.
+- **Styling** dengan Tailwind CSS 4.
+- **Konten studi kasus** harus memiliki sumber yang dapat diverifikasi (`CaseSource`). Statistik dan klaim dampak tidak boleh dikarang.
 - **Aksesibilitas.** Globe dan graf adalah visualisasi, bukan satu-satunya jalur navigasi; sediakan alternatif berbasis daftar yang dapat diakses keyboard.
 - **Next.js 16** memiliki perubahan API dibanding versi sebelumnya. Rujuk dokumentasi di `node_modules/next/dist/docs/` sebelum menulis kode, sebagaimana diinstruksikan di [`AGENTS.md`](AGENTS.md).
 
 ## Pengujian dan Penjaminan Mutu
 
-Repositori belum memiliki pengujian otomatis maupun skrip `test`. Verifikasi yang tersedia saat ini:
+Verifikasi yang tersedia saat ini:
 
 ```bash
 npm run lint
-npx tsc --noEmit
+npm run typecheck
 npx prisma validate
 npm run build
 ```
 
 Pemeriksaan manual yang disarankan untuk halaman atlas:
 
-- Uji di Chrome, Firefox, dan Safari versi terbaru. Label marker bergantung pada CSS Anchor Positioning; pada browser yang belum mendukungnya, label tidak terposisi dengan benar. Fallback berupa daftar studi kasus belum diimplementasikan.
-- Uji interaksi drag pada perangkat sentuh.
-- Pastikan halaman tetap dapat dimuat ketika tabel studi kasus kosong.
-
-Pengujian yang direncanakan meliputi unit test untuk mesin skoring kuis dan skema validasi, integration test untuk akses data, serta end-to-end test untuk alur atlas, studi kasus, kuis, dan jalur keahlian.
+- Uji di Chrome, Firefox, dan Safari versi terbaru.
+- Uji interaksi drag dan sentuh pada globe `cobe`.
+- Pastikan daftar dan panel studi kasus tetap berfungsi saat WebGL atau anchor positioning tidak aktif.
 
 ## Deployment
 
-Proyek belum memiliki konfigurasi deployment dan belum pernah diuji di lingkungan produksi. Kebutuhan minimum berdasarkan konfigurasi saat ini:
+Kebutuhan minimum berdasarkan konfigurasi saat ini:
 
 - Runtime Node.js yang memenuhi rentang versi pada bagian Prasyarat.
 - Basis data PostgreSQL dan variabel `DATABASE_URL` pada lingkungan produksi.
 - Menjalankan `npx prisma migrate deploy` sebelum atau saat rilis untuk menerapkan migrasi. Jangan gunakan `migrate dev` atau `migrate reset` di produksi.
 - Menjalankan `npm run build`, lalu `npm run start`.
 
-Halaman `/atlas` mengambil data dari basis data saat request, sehingga koneksi basis data harus tersedia saat aplikasi berjalan.
-
 ## Keterbatasan Saat Ini
 
-- Rute `/cases/[slug]`, kuis, jalur keahlian, progres, dan admin belum diimplementasikan.
-- Belum ada migrasi, seed, maupun data contoh di repositori.
-- Belum ada autentikasi. Model `User`, `Account`, `Session`, dan `VerificationToken` sudah ada di skema, tetapi pustaka autentikasi belum dipasang dan dikonfigurasi.
-- Halaman atlas belum memiliki state loading, kosong, dan error yang eksplisit, serta belum memiliki fallback untuk browser tanpa WebGL atau tanpa dukungan CSS Anchor Positioning.
-- Beranda dan metadata situs masih berasal dari template.
-- Belum ada pengujian otomatis.
+- Rute `/cases/[slug]`, kuis, jalur keahlian, dan panel admin sedang disiapkan sesuai roadmap di `docs/PROJECT_CONCEPT.md`.
+- Beranda (`/`) masih berupa template awal.
 
 ## Kontribusi
 
