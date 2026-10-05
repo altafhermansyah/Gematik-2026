@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import { DEFAULT_LOCALE } from "@/lib/i18n/localized";
+import { getMessages } from "@/lib/i18n/messages";
 
 type AtlasErrorProps = {
   error: Error & { digest?: string };
@@ -8,6 +10,8 @@ type AtlasErrorProps = {
 };
 
 export default function AtlasError({ error, reset }: AtlasErrorProps) {
+  const t = getMessages(DEFAULT_LOCALE);
+
   useEffect(() => {
     // Log contextual diagnostics for developers without leaking sensitive data to users
     console.error("[app/atlas/error] Atlas route error encountered:", error);
@@ -34,11 +38,11 @@ export default function AtlasError({ error, reset }: AtlasErrorProps) {
         </div>
 
         <h1 className="text-xl font-semibold text-slate-100">
-          Unable to Load Atlas
+          {t.atlas.error.title}
         </h1>
 
         <p className="mt-2 text-sm text-slate-400 leading-relaxed">
-          We couldn&apos;t load the atlas right now. Please try again.
+          {t.atlas.error.description}
         </p>
 
         <div className="mt-6 flex justify-center">
@@ -47,7 +51,7 @@ export default function AtlasError({ error, reset }: AtlasErrorProps) {
             onClick={() => reset()}
             className="rounded-lg bg-amber-500 px-5 py-2.5 text-sm font-medium text-slate-950 hover:bg-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 transition-colors"
           >
-            Try again
+            {t.common.tryAgain}
           </button>
         </div>
       </div>

@@ -2,18 +2,33 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { AtlasCase } from "@/modules/atlas/types";
-import AtlasGlobe from "./AtlasGlobe";
-import AtlasCaseList from "./AtlasCaseList";
-import AtlasCasePanel from "./AtlasCasePanel";
+import AtlasGlobe, { type AtlasGlobeLabels } from "./AtlasGlobe";
+import AtlasCaseList, { type AtlasCaseListLabels } from "./AtlasCaseList";
+import AtlasCasePanel, { type AtlasCasePanelLabels } from "./AtlasCasePanel";
+
+export type AtlasExplorerLabels = {
+  headingTitle: string;
+  headingDescription: string;
+  globeSectionAria: string;
+  panelSectionAria: string;
+  listSectionAria: string;
+  casesHeading: string;
+  clearSelection: string;
+  panel: AtlasCasePanelLabels;
+  list: AtlasCaseListLabels;
+  globe: AtlasGlobeLabels;
+};
 
 type AtlasExplorerProps = {
   cases: AtlasCase[];
   initialSelectedSlug: string | null;
+  labels: AtlasExplorerLabels;
 };
 
 export default function AtlasExplorer({
   cases,
   initialSelectedSlug,
+  labels,
 }: AtlasExplorerProps) {
   const [selectedSlug, setSelectedSlug] = useState<string | null>(initialSelectedSlug);
 
@@ -73,39 +88,43 @@ export default function AtlasExplorer({
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <header className="mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-100">
-          Atlas Inovasi Global
+          {labels.headingTitle}
         </h1>
         <p className="mt-2 text-sm text-slate-400 max-w-2xl">
-          Eksplorasi tantangan global dan studi kasus inovasi teknologi yang membuka jalan bagi masa depan berkelanjutan.
+          {labels.headingDescription}
         </p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Globe column (Left on desktop, top on mobile) */}
         <section
-          aria-label="Globe visualization"
+          aria-label={labels.globeSectionAria}
           className="lg:col-span-7 w-full flex items-center justify-center min-w-0"
         >
           <AtlasGlobe
             cases={cases}
             selectedSlug={selectedSlug}
             onSelect={handleSelect}
+            labels={labels.globe}
           />
         </section>
 
         {/* Details & List column (Right on desktop, bottom on mobile) */}
         <div className="lg:col-span-5 w-full flex flex-col gap-6 min-w-0">
-          <section aria-label="Selected case details">
-            <AtlasCasePanel selectedCase={selectedCase} />
+          <section aria-label={labels.panelSectionAria}>
+            <AtlasCasePanel
+              selectedCase={selectedCase}
+              labels={labels.panel}
+            />
           </section>
 
           <section
-            aria-label="Published cases list"
+            aria-label={labels.listSectionAria}
             className="rounded-lg border border-slate-800 bg-slate-900/60 p-4"
           >
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Cases ({cases.length})
+                {labels.casesHeading} ({cases.length})
               </h2>
               {selectedSlug && (
                 <button
@@ -113,7 +132,7 @@ export default function AtlasExplorer({
                   onClick={handleClear}
                   className="text-xs text-amber-400 hover:text-amber-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded px-1"
                 >
-                  Clear selection (Esc)
+                  {labels.clearSelection}
                 </button>
               )}
             </div>
@@ -121,6 +140,7 @@ export default function AtlasExplorer({
               cases={cases}
               selectedSlug={selectedSlug}
               onSelect={handleSelect}
+              labels={labels.list}
             />
           </section>
         </div>

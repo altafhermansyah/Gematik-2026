@@ -2,27 +2,34 @@
 
 import type { AtlasCase } from "@/modules/atlas/types";
 
+export type AtlasCaseListLabels = {
+  empty: string;
+  navAria: string;
+};
+
 type AtlasCaseListProps = {
   cases: AtlasCase[];
   selectedSlug: string | null;
   onSelect: (slug: string) => void;
+  labels: AtlasCaseListLabels;
 };
 
 export default function AtlasCaseList({
   cases,
   selectedSlug,
   onSelect,
+  labels,
 }: AtlasCaseListProps) {
   if (cases.length === 0) {
     return (
       <div className="py-8 text-center text-sm text-slate-400">
-        No published cases yet.
+        {labels.empty}
       </div>
     );
   }
 
   return (
-    <nav aria-label="Atlas cases list" className="w-full">
+    <nav aria-label={labels.navAria} className="w-full">
       <ul className="divide-y divide-slate-800/80 border-y border-slate-800/80">
         {cases.map((c) => {
           const isSelected = c.slug === selectedSlug;

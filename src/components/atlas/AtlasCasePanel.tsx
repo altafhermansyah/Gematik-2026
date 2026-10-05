@@ -1,11 +1,17 @@
 import Link from "next/link";
 import type { AtlasCase } from "@/modules/atlas/types";
 
-type AtlasCasePanelProps = {
-  selectedCase: AtlasCase | null;
+export type AtlasCasePanelLabels = {
+  empty: string;
+  readFullCase: string;
 };
 
-export default function AtlasCasePanel({ selectedCase }: AtlasCasePanelProps) {
+type AtlasCasePanelProps = {
+  selectedCase: AtlasCase | null;
+  labels: AtlasCasePanelLabels;
+};
+
+export default function AtlasCasePanel({ selectedCase, labels }: AtlasCasePanelProps) {
   return (
     <div
       aria-live="polite"
@@ -45,14 +51,14 @@ export default function AtlasCasePanel({ selectedCase }: AtlasCasePanelProps) {
               href={`/cases/${selectedCase.slug}`}
               className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-400 hover:text-amber-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded"
             >
-              Read the full case
+              {labels.readFullCase}
               <span aria-hidden="true">&rarr;</span>
             </Link>
           </div>
         </article>
       ) : (
         <div className="py-6 text-center text-sm text-slate-400">
-          <p>Select a marker on the globe or a case from the list to view its summary.</p>
+          <p>{labels.empty}</p>
         </div>
       )}
     </div>

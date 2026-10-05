@@ -1,8 +1,13 @@
+import { DEFAULT_LOCALE } from "@/lib/i18n/localized";
+import { getMessages } from "@/lib/i18n/messages";
+
 export default function AtlasLoading() {
+  const t = getMessages(DEFAULT_LOCALE);
+
   return (
     <main
       role="status"
-      aria-label="Loading atlas content"
+      aria-label={t.atlas.loading.ariaLabel}
       className="min-h-screen bg-slate-950 text-slate-100"
     >
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-pulse">
@@ -54,7 +59,7 @@ export default function AtlasLoading() {
           </div>
         </div>
       </div>
-      <span className="sr-only">Loading atlas data...</span>
+      <span className="sr-only">{t.atlas.loading.srText}</span>
     </main>
   );
 }
