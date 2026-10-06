@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0d0f12;
+  --foreground: #e5e7eb;
 }
 
 @theme inline {
@@ -11,29 +11,41 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  /* KarsaLoka minimal tokens: ink/navy base, amber accent, neutral text, restrained border */
-  --color-ink-950: #040813;
-  --color-ink-900: #0a1124;
-  --color-ink-850: #0e172e;
-  --color-ink-800: #13203e;
-  --color-ink-700: #1b2b52;
-  --color-border-subtle: #1f3056;
-  --color-border-focus: #3b82f6;
-  --color-text-main: #f8fafc;
-  --color-text-muted: #94a3b8;
+  /* Minimalist editorial palette inspired by reference */
+  --color-surface: #12151a;
+  --color-surface-hover: #171b22;
+  --color-border-subtle: #1e232b;
+  --color-border-hairline: rgba(255, 255, 255, 0.08);
+  --color-text-main: #e5e7eb;
+  --color-text-muted: #6b7280;
   --color-accent-amber: #f59e0b;
-  --color-accent-amber-hover: #d97706;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  letter-spacing: -0.01em;
+}
+
+/* Subtle dot matrix matching reference screenshot 5 */
+.dot-matrix-bg {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Custom minimal scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #0d0f12;
+}
+::-webkit-scrollbar-thumb {
+  background: #262b35;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #f59e0b;
 }
