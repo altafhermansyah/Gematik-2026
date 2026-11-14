@@ -2,6 +2,8 @@ export type CaseMetric = {
   label: string;
   value: number;
   unit: string;
+  quote?: string;
+  sourceUrl?: string;
 };
 
 export type CaseSourceItem = {
@@ -22,6 +24,8 @@ export type CaseDetail = {
   metrics: CaseMetric[];
   countryCode: string;
   region: string | null;
+  lat?: number;
+  lng?: number;
   year: number | null;
   sdgs: number[];
   technologies: string[];

@@ -1,269 +1,148 @@
 # KarsaLoka
 
-KarsaLoka adalah platform web edukatif yang menghubungkan isu global dengan inovasi nyata, lalu menerjemahkan minat pengguna menjadi jalur pengembangan keahlian yang personal. Proyek ini dikembangkan untuk kompetisi GEMATIK VI 2026 dengan tema "Empowering Global Innovators for an Intelligent Future".
+KarsaLoka adalah platform web edukatif yang menghubungkan tantangan nyata di Indonesia dan dunia dengan inovasi teknologi & kecerdasan artifisial (AI) yang teruji ilmiah, lalu menerjemahkan minat pengguna menjadi jalur pengembangan keahlian yang personal. Proyek ini dikembangkan untuk kompetisi **GEMATIK VI 2026** dengan tema *"Empowering Global Innovators for an Intelligent Future"*.
 
 ## Latar Belakang
 
-Banyak pelajar dan mahasiswa peduli terhadap krisis global seperti perubahan iklim, ketahanan pangan, kesehatan, pendidikan, dan kebencanaan, tetapi menghadapi dua kendala:
+Banyak pelajar dan mahasiswa peduli terhadap krisis global seperti perubahan iklim, ketahanan pangan, kesehatan, pendidikan, kebencanaan, dan inklusi sosial, tetapi menghadapi dua kendala utama:
 
-1. Sulit memetakan masalah mana yang mendesak dan bagaimana teknologi telah diterapkan secara nyata untuk mengatasinya.
-2. Tidak mengetahui keahlian spesifik yang perlu dipelajari agar dapat berkontribusi di era kecerdasan artifisial.
+1. Sulit memetakan masalah nyata dan bagaimana teknologi/AI telah diterapkan serta diuji secara ilmiah di lapangan.
+2. Tidak mengetahui keahlian spesifik yang perlu dipelajari agar dapat berkontribusi secara bertanggung jawab.
 
-KarsaLoka menjembatani kepedulian pada skala global menuju langkah belajar yang konkret pada skala individu, melalui alur berikut:
+KarsaLoka menjembatani kepedulian pada skala global menuju langkah belajar yang konkret pada skala individu melalui alur berikut:
 
 ```text
-Isu global -> Eksplorasi atlas -> Studi kasus inovasi -> Kuis diagnosis -> Jalur keahlian -> Pelacakan progres
+Masalah Nyata -> Eksplorasi Globe Atlas 3D -> Studi Kasus Terverifikasi -> Kuis Diagnosis -> Jalur Keahlian -> Pelacakan Progres
 ```
 
-## Status Pengembangan
+## Arsitektur 100% Full-Local (Tanpa Basis Data & Tanpa Panel Admin)
 
-Proyek berada pada tahap awal pengembangan (versi `0.1.0`). Skema basis data 10 tabel sudah dirancang dan dimigrasikan. Bagian berikut membedakan fitur yang sudah ada di repositori dan fitur yang masih direncanakan.
+Sejak pembaruan arsitektur **2026-10-25**, KarsaLoka berjalan **100% lokal tanpa PostgreSQL, tanpa Prisma, dan tanpa panel admin (`/admin/*`)**:
 
-### Sudah diimplementasikan
+- **Konten Kurasi sebagai Kode (`src/content/`):** Seluruh 6 bidang masalah (`domains.ts`), **16 studi kasus terverifikasi** (`src/content/cases/*.ts`), jalur belajar (`paths.ts`), keahlian (`skills.ts`), dan sumber belajar (`resources.ts`) disimpan sebagai modul TypeScript bertipe ketat (`as const satisfies ...`).
+- **Validasi Integritas & Jejak Audit saat Build (`src/modules/content/validate.ts`):** Fungsi `assertContentIntegrity()` memvalidasi seluruh invarian lintas-record saat build: keunikan slug, kelengkapan dwibahasa (`id` dan `en`), keabsahan koordinat (`lat`, `lng`), serta memastikan **setiap angka di `metrics` (total 41 metrik) memiliki kutipan verbatim (`quote`) dan `sourceUrl`** yang terdaftar pada sumber kasus tersebut.
+- **Penyimpanan Progres di Sisi Klien:** Progres belajar, bookmark, dan hasil kuis disimpan di browser pengguna (`localStorage` melalui Zustand `persist`) tanpa memerlukan registrasi atau login.
 
-- **Skema basis data 10 tabel** di [`prisma/schema.prisma`](prisma/schema.prisma) untuk domain atlas (`Domain`, `Case`, `CaseSource`), jalur keahlian (`Path`, `PathNode`, `PathEdge`, `Skill`, `Resource`), jembatan (`CasePath`), dan akun admin (`AdminUser`). Progres belajar, bookmark, dan hasil kuis disimpan di sisi klien (`localStorage` lewat Zustand `persist`). Kuis berada di kode (`modules/quiz`). Konten teks yang dilokalkan disimpan sebagai JSON `{ "id": "...", "en": "..." }` dan divalidasi dengan Zod.
-- **Data awal (seed)** di [`prisma/seed.ts`](prisma/seed.ts) berisi data studi kasus terverifikasi, domain, jalur belajar, node graph, skill, resource, dan akun admin awal.
-- **Halaman atlas (`/atlas`)** berupa Server Component yang mengambil studi kasus berstatus `PUBLISHED` dari basis data dan meneruskannya ke komponen globe dan daftar.
-- **Komponen globe interaktif** ([`AtlasGlobe.tsx`](src/components/atlas/AtlasGlobe.tsx)) berbasis `cobe` dengan rotasi otomatis, rotasi melalui drag (pointer dan sentuh), marker berwarna sesuai bidang, panel studi kasus, dan daftar alternatif yang dapat diakses keyboard.
+## Fitur yang Sudah Tersedia (Ready-Prod)
 
-### Sebagian atau belum berfungsi
+1. **Halaman Beranda (`/`)**: Panggung *deep-space* (`#04060f`, aksen solid `#5df0a8`) di atas Bumi WebGL 3D lokal (`three@0.143.0` + `lenis` + aset GLB/DRACO mandiri di `public/`), 6 kartu bidang × UN SDGs, *showcase* **Telemetri Koleksi · Langsung** interaktif (Per Domain, Target SDGs, 3 Kasus Indonesia), serta 4 metrik agregat teraudit.
+2. **Halaman Atlas Inovasi Global (`/atlas`)**:
+   - **Globe 3D Interaktif (`AtlasGlobe.tsx` berbasis `Three.js` + GLB/DRACO)**:
+     - Menampilkan **16 titik kasus nyata** di **11 negara** yang diberi warna sesuai 6 bidang masalah.
+     - **Transisi Kamera Mulus (Fly-To)**: memilih kasus dari daftar atau URL otomatis memutar bola dunia ke koordinat `(lat, lng)` kasus tersebut melalui jalur sudut terpendek.
+     - **Kontrol HUD & Keyboard**: tombol *Fokus Indonesia*, *Reset sudut pandang*, *Jeda/Putar otomatis*, legenda warna bidang masalah, navigasi tombol panah keyboard pada `<canvas>`, serta daftar marker alternatif untuk pembaca layar (`sr-only`).
+     - **Ketahanan WebGL & Filter Kosong**: kanvas tetap hidup saat filter menghasilkan 0 kasus (menampilkan overlay reset filter tanpa menghancurkan konteks WebGL) dan mendukung pemulihan `webglcontextlost`.
+   - **Filter & Pencarian Instan Tersinkronisasi URL (`AtlasExplorer.tsx`)**:
+     - Filter per bidang masalah (`?domain=climate`, dll.), filter cepat **Indonesia (`?country=ID`)**, dan filter **Unggulan (`featured`)**.
+     - Pencarian langsung (`?q=...`, pintasan tombol `/`) berdasarkan judul, ringkasan, lokasi, teknologi, atau nomor SDG.
+     - Peralihan bahasa antarmuka dan konten secara instan (**Bahasa Indonesia `ID` / Bahasa Inggris `EN`** melalui `?lang=id|en`) dengan mempertahankan filter serta pilihan kasus aktif.
+   - **Panel Ringkasan Kaya (`AtlasCasePanel.tsx`) & Daftar Kasus (`AtlasCaseList.tsx`)**:
+     - Menampilkan pratinjau metrik dampak terverifikasi, badge SDG, tag teknologi, tahun, lokasi, dan tautan ke halaman detail statis.
+3. **Halaman Detail Studi Kasus (`/cases/[slug]`)**:
+   - Dirender secara **100% statis (SSG)** pada waktu build melalui `generateStaticParams()` dengan dukungan dwibahasa instan (`ID` / `EN`).
+   - Menyajikan masalah, solusi, peran AI/teknologi, dampak nyata, kartu metrik lengkap dengan **kutipan verbatim sumber primer** beserta tautan sumbernya, serta daftar referensi yang dapat diverifikasi.
 
-- Label marker mengarah ke `/cases/[slug]`, tetapi rute detail tersebut **sedang disiapkan**.
-- Halaman beranda (`/`) dan metadata di [`layout.tsx`](src/app/layout.tsx) masih berupa template awal.
+## Daftar 16 Studi Kasus Terverifikasi (6 Bidang Masalah)
 
-### Direncanakan
+| Bidang | Slug | Lokasi (`lat`, `lng`) | Negara | Sumber Utama |
+|---|---|---|---|---|
+| **Iklim & Lingkungan** (`climate`) | `rainforest-connection-forest-listening` | Solok Selatan, Sumatra Barat (`-1.4833, 101.25`) | `ID` | RFCx, ANTARA News, IUCN NL |
+| **Iklim & Lingkungan** (`climate`) | `global-fishing-watch-dark-vessels` | Washington, D.C. / Perairan Global (`38.9059, -77.0431`) | `US` | *Nature* 2024 ([PMC10764273](https://pmc.ncbi.nlm.nih.gov/articles/PMC10764273/)) |
+| **Pangan & Pertanian** (`food`) | `plantvillage-nuru-crop-disease` | Busia County, Western Kenya (`0.4608, 34.1115`) | `KE` | *Frontiers in Plant Science* 2020 ([PMC7775399](https://pmc.ncbi.nlm.nih.gov/articles/PMC7775399/)) |
+| **Pangan & Pertanian** (`food`) | `plantix-crop-diagnosis-smallholders` | Hyderabad, Telangana (`17.5111, 78.2752`) | `IN` | FAO e-Agriculture, ICRISAT / PEAT |
+| **Kesehatan & Sains** (`health`) | `alphafold-protein-structure-prediction` | Hinxton, Cambridgeshire (`52.0801, 0.1864`) | `GB` | *Nature* 2021 ([PMC8371605](https://pmc.ncbi.nlm.nih.gov/articles/PMC8371605/)), EMBL-EBI |
+| **Kesehatan & Sains** (`health`) | `zipline-medical-drone-delivery` | Muhanga, Southern Province (`-2.0845, 29.7529`) | `RW` | WHO, Zipline, The New Times |
+| **Kesehatan & Sains** (`health`) | `qure-ai-tuberculosis-screening` | Mumbai, Maharashtra (`19.1079, 72.8836`) | `IN` | *Scientific Reports* 2020 ([PMC6959311](https://pmc.ncbi.nlm.nih.gov/articles/PMC6959311/)) |
+| **Kesehatan & Sains** (`health`) | `mpedigree-medicine-authentication` | Accra (`5.6123, -0.2038`) | `GH` | mPedigree, Skoll Foundation, Partnership for Safe Medicines |
+| **Kesehatan & Sains** (`health`) | `wmp-wolbachia-dengue-yogyakarta` | Kota Yogyakarta, DI Yogyakarta (`-7.7956, 110.3695`) | `ID` | *New England Journal of Medicine* 2021 ([PMC8103655](https://pmc.ncbi.nlm.nih.gov/articles/PMC8103655/)) |
+| **Pendidikan** (`education`) | `mindspark-adaptive-learning-india` | New Delhi (`28.6139, 77.2090`) | `IN` | *American Economic Review* 2019, J-PAL |
+| **Pendidikan** (`education`) | `onebillion-tablet-math-intervention` | Lilongwe (`-13.9626, 33.7741`) | `MW` | *British Journal of Educational Technology* 2019 ([PMC6366442](https://pmc.ncbi.nlm.nih.gov/articles/PMC6366442/)) |
+| **Kebencanaan** (`disaster`) | `petabencana-flood-crowdsourcing` | DKI Jakarta (`-6.2088, 106.8456`) | `ID` | Yayasan Peta Bencana, OECD OPSI |
+| **Kebencanaan** (`disaster`) | `google-flood-hub-riverine-forecasting` | Dhaka, Brahmaputra-Ganges Basin (`23.8103, 90.4125`) | `BD` | *Nature* 2024 ([PMC10957424](https://pmc.ncbi.nlm.nih.gov/articles/PMC10957424/)) |
+| **Inklusi Sosial** (`inclusion`) | `togo-novissi-satellite-aid-targeting` | Lomé & Rural Cantons (`6.1375, 1.2123`) | `TG` | *Nature* 2022 ([PMC8967719](https://pmc.ncbi.nlm.nih.gov/articles/PMC8967719/)) |
+| **Inklusi Sosial** (`inclusion`) | `be-my-eyes-visual-assistance` | Aarhus (`56.1629, 10.2039`) | `DK` | Be My Eyes Official Story |
+| **Inklusi Sosial** (`inclusion`) | `masakhane-african-languages-nlp` | Nairobi (`-1.2921, 36.8219`) | `KE` | *Findings of EMNLP* 2020 ([ACL Anthology](https://aclanthology.org/2020.findings-emnlp.195/)) |
 
-- Filter dan pencarian studi kasus pada atlas via parameter URL.
-- Halaman detail studi kasus (masalah, inovasi, peran AI/teknologi, dampak, dan sumber).
-- Kuis diagnosis dengan skoring deterministik berbasis aturan (`modules/quiz`).
-- Visualisasi jalur keahlian dengan `@xyflow/react` dan pelacakan progres lokal di browser.
-- Antarmuka admin untuk mengelola studi kasus dan jalur keahlian.
-- Autentikasi sesi admin (pengunjung tidak memerlukan login).
+*(Total: 16 studi kasus `PUBLISHED` lintas 6 bidang masalah di 11 negara, termasuk 3 studi kasus di Indonesia, dengan 41 metrik dampak terverifikasi).*
 
 ## Teknologi
 
-Tabel berikut hanya mencantumkan dependensi langsung yang terdaftar di [`package.json`](package.json).
-
-| Kategori | Teknologi | Status penggunaan |
+| Kategori | Teknologi | Status Penggunaan |
 |---|---|---|
 | Framework | Next.js 16 (App Router), React 19 | Digunakan |
 | Bahasa | TypeScript 5 (mode `strict`) | Digunakan |
 | Styling | Tailwind CSS 4 melalui `@tailwindcss/postcss` | Digunakan |
-| Basis data | PostgreSQL | Digunakan |
-| ORM | Prisma 7, generator `prisma-client`, driver adapter `@prisma/adapter-pg` | Digunakan |
-| Globe | `cobe` 2 | Digunakan |
+| Lapisan Konten | Modul TypeScript lokal (`src/content/`) + validator `assertContentIntegrity()` | Digunakan |
+| Globe 3D Atlas (`/atlas`) | `three` 0.143.0 + GLB/DRACO lokal | Digunakan |
+| Bumi WebGL Beranda (`/`) | `three` 0.143.0 + `lenis` + GLB/DRACO lokal | Digunakan |
+| Validasi | `zod` (skema teks dwibahasa `LocalizedText`) | Digunakan |
 | Graf jalur keahlian | `@xyflow/react` | Terpasang |
-| Animasi | `framer-motion` | Terpasang |
-| State klien | `zustand` (`persist` untuk progres lokal) | Terpasang |
-| Validasi | `zod` | Digunakan |
-| Hashing kata sandi | `bcryptjs` | Digunakan (AdminUser seed) |
-| Utilitas | `clsx`, `tailwind-merge`, `lucide-react` | Digunakan |
+| State klien | `zustand` (`persist` di `localStorage`) | Terpasang |
 | Linting | ESLint 9 dengan `eslint-config-next` | Digunakan |
 
-## Arsitektur
-
-KarsaLoka dirancang sebagai **modular monolith**: satu aplikasi Next.js dan satu basis data PostgreSQL, dengan pemisahan tanggung jawab per domain (atlas, studi kasus, jalur keahlian, kuis, progres, admin). Pada tahap saat ini, pemisahan modul tersebut baru tercermin pada skema basis data; struktur kode aplikasi masih minimal.
-
-Prinsip yang sudah diterapkan pada kode yang ada:
-
-- Pengambilan data dilakukan di Server Component (`src/app/atlas/page.tsx`), lalu hanya data yang diperlukan diteruskan ke komponen klien.
-- Komponen yang membutuhkan WebGL dan event browser (`AtlasGlobe`) ditandai `"use client"` dan dibatasi sekecil mungkin.
-- Prisma Client dibuat sekali di [`src/lib/prisma.ts`](src/lib/prisma.ts) dan disimpan di `globalThis` selama pengembangan untuk mencegah koneksi ganda saat hot reload.
-- Query menggunakan `select` agar hanya kolom yang dibutuhkan yang diambil.
-
-### Struktur Direktori
+## Struktur Direktori
 
 ```text
 .
 ├── .ai/
-│   └── KARSALOKA_PROJECT_RULES.md   Standar rekayasa dan desain proyek
+│   └── KARSALOKA_PROJECT_RULES.md     Standar rekayasa dan desain proyek
 ├── docs/
-│   └── PROJECT_CONCEPT.md           Konsep produk, peta halaman, dan tanggung jawab tabel
-├── prisma/
-│   ├── migrations/                  Riwayat migrasi Prisma
-│   ├── schema.prisma                Skema basis data PostgreSQL (10 tabel)
-│   └── seed.ts                      Skrip pengisian data awal terverifikasi
-├── public/                          Aset statis
+│   ├── PROJECT_CONCEPT.md             Konsep produk dan arsitektur konten lokal
+│   └── LAPORAN_MIGRASI_LOCAL_ATLAS.md Laporan migrasi arsitektur lokal & verifikasi data
+├── public/                            Aset statis
 ├── src/
 │   ├── app/
-│   │   ├── atlas/page.tsx           Halaman atlas (Server Component)
-│   │   ├── globals.css              Entri Tailwind CSS dan token warna dasar
-│   │   ├── layout.tsx               Root layout
-│   │   └── page.tsx                 Halaman beranda
+│   │   ├── atlas/                     Halaman Globe Atlas 3D (/atlas) beserta loading & error boundary
+│   │   ├── cases/[slug]/              Halaman detail studi kasus statis (/cases/[slug])
+│   │   ├── globals.css                Entri Tailwind CSS
+│   │   ├── layout.tsx                 Root layout
+│   │   └── page.tsx                   Halaman beranda KarsaLoka
 │   ├── components/
-│   │   └── atlas/AtlasGlobe.tsx     Globe interaktif berbasis cobe
-│   ├── generated/prisma/            Prisma Client hasil generate (diabaikan Git)
-│   └── lib/
-│       └── prisma.ts                Instans tunggal Prisma Client
-├── prisma.config.ts                 Konfigurasi Prisma CLI (schema, migrasi, seed, URL)
-├── AGENTS.md                        Instruksi untuk agen AI terkait versi Next.js
+│   │   ├── atlas/                     AtlasExplorer, AtlasGlobe, AtlasCasePanel, AtlasCaseList
+│   │   └── cases/                     CaseHeader, CaseSection, CaseMetrics, CaseSources
+│   ├── content/
+│   │   ├── cases/                     Data studi kasus per bidang (climate, disaster, education, food, health, inclusion)
+│   │   ├── domains.ts                 6 bidang masalah
+│   │   ├── paths.ts                   Jalur keahlian & graf prasyarat
+│   │   ├── resources.ts               Materi belajar terkurasi
+│   │   └── skills.ts                  Katalog keahlian
+│   ├── lib/
+│   │   └── i18n/                      Utilitas teks dwibahasa (localized.ts) & kamus UI (messages.ts)
+│   └── modules/
+│       ├── atlas/                     Query, tipe, dan konstanta matematika globe
+│       ├── cases/                     Query dan tipe halaman detail kasus
+│       └── content/                   Store tunggal (store.ts), validator integritas (validate.ts), & tipe (types.ts)
+├── AGENTS.md                          Instruksi untuk agen AI terkait versi Next.js
 ├── next.config.ts
 ├── eslint.config.mjs
 ├── postcss.config.mjs
-└── tsconfig.json                    Alias impor `@/*` mengarah ke `src/*`
+└── tsconfig.json
 ```
 
-## Prasyarat
+## Instalasi dan Pengembangan Lokal (Tanpa Setup Database)
 
-- **Node.js** versi `^20.19`, `^22.12`, atau `>=24.0`. Rentang ini adalah irisan kebutuhan Next.js 16 (`>=20.9.0`) dan Prisma 7.
-- **npm**, sesuai lockfile `package-lock.json` yang tersedia.
-- **PostgreSQL** yang dapat diakses dari mesin lokal, baik instalasi lokal, kontainer, maupun layanan terkelola.
+Karena seluruh konten disimpan secara lokal di `src/content/`, Anda **tidak memerlukan PostgreSQL ataupun file `.env`** untuk menjalankan aplikasi:
 
-## Instalasi dan Pengembangan Lokal
-
-1. Clone repositori dan masuk ke direktorinya:
-
-   ```bash
-   git clone https://github.com/altafhermansyah/Gematik-2026
-   cd Gematik-2026
-   ```
-
-2. Instal dependensi:
+1. Instal dependensi:
 
    ```bash
    npm install
    ```
 
-3. Siapkan berkas `.env` dari `.env.example`:
-
-   ```bash
-   cp .env.example .env
-   ```
-
-   Isi variabel di `.env`:
-
-   ```env
-   DATABASE_URL="postgresql://<user>:<password>@localhost:5432/<nama_database>?schema=public"
-   SEED_ADMIN_EMAIL="admin@karsaloka.id"
-   SEED_ADMIN_PASSWORD="supersecretpassword123"
-   ```
-
-4. Jalankan migrasi basis data dan generate client:
-
-   ```bash
-   npx prisma migrate dev
-   npx prisma generate
-   ```
-
-5. Isi data awal (seed) studi kasus, domain, jalur, skill, materi, dan akun admin:
-
-   ```bash
-   npx prisma db seed
-   ```
-
-6. Jalankan server pengembangan:
+2. Jalankan server pengembangan:
 
    ```bash
    npm run dev
    ```
 
-7. Buka `http://localhost:3000/atlas` di browser.
+3. Buka `http://localhost:3000` atau langsung ke `http://localhost:3000/atlas`.
 
-## Variabel Lingkungan
-
-Contoh konfigurasi tersedia di [`.env.example`](.env.example).
-
-| Variabel | Wajib | Digunakan oleh | Keterangan |
-|---|---|---|---|
-| `DATABASE_URL` | Ya | `prisma.config.ts`, `src/lib/prisma.ts` | String koneksi PostgreSQL untuk Prisma CLI dan Prisma Client (`@prisma/adapter-pg`). |
-| `SEED_ADMIN_EMAIL` | Ya (saat seed) | `prisma/seed.ts` | Email untuk akun awal administrator. |
-| `SEED_ADMIN_PASSWORD` | Ya (saat seed) | `prisma/seed.ts` | Kata sandi untuk akun administrator (minimal 12 karakter, di-hash bcrypt). |
-
-Catatan:
-
-- Semua berkas `.env*` (kecuali `.env.example`) diabaikan oleh Git melalui `.gitignore`. Jangan pernah meng-commit kredensial.
-- `NODE_ENV` diatur otomatis oleh Next.js.
-
-## Alur Kerja Basis Data
-
-Konfigurasi Prisma CLI berada di [`prisma.config.ts`](prisma.config.ts). Berkas ini memuat `.env` melalui `dotenv`, menunjuk skema `prisma/schema.prisma`, direktori migrasi `prisma/migrations`, konfigurasi seed `tsx prisma/seed.ts`, dan mengambil URL dari `DATABASE_URL`.
-
-| Tujuan | Perintah |
-|---|---|
-| Generate Prisma Client | `npx prisma generate` (juga otomatis via `postinstall` dan `build`) |
-| Validasi skema | `npx prisma validate` |
-| Membuat dan menerapkan migrasi saat pengembangan | `npm run db:migrate` (`prisma migrate dev && prisma generate`) |
-| Mengisi data awal | `npm run db:seed` (`prisma db seed`) |
-| Melihat status migrasi | `npx prisma migrate status` |
-| Menerapkan migrasi di lingkungan produksi | `npx prisma migrate deploy` |
-| Membuka Prisma Studio | `npm run db:studio` |
-
-Hal yang perlu diperhatikan:
-
-- **Jangan gunakan `prisma db push`** pada basis data bersama. Seluruh perubahan skema wajib melalui `prisma migrate dev`.
-- **Integritas seed:** seed menghapus tabel konten namun **tidak pernah menghapus `AdminUser`**. Seed menolak dijalankan di produksi kecuali `SEED_ALLOW_WIPE=1`.
-- **Prisma 7:** `migrate dev` tidak meregenerate client secara otomatis; skrip `npm run db:migrate` menjalankan `prisma migrate dev && prisma generate`.
-- Jangan mengubah migrasi yang sudah diterapkan. Buat migrasi baru untuk setiap perubahan skema.
-
-## Perintah Pengembangan
+## Perintah Pengembangan & Verifikasi
 
 | Perintah | Fungsi |
 |---|---|
 | `npm run dev` | Menjalankan server pengembangan Next.js |
-| `npm run build` | Menjalankan `prisma generate` lalu `next build` |
-| `npm run start` | Menjalankan hasil build produksi |
-| `npm run lint` | Menjalankan ESLint |
 | `npm run typecheck` | Menjalankan pemeriksaan tipe TypeScript (`tsc --noEmit`) |
-| `npm run db:migrate` | `prisma migrate dev && prisma generate` |
-| `npm run db:seed` | Mengisi data awal (`prisma db seed`) |
-| `npm run db:studio` | Membuka Prisma Studio |
-
-## Konvensi Pengembangan
-
-Standar lengkap tercantum di [`.ai/KARSALOKA_PROJECT_RULES.md`](.ai/KARSALOKA_PROJECT_RULES.md) dan [`docs/PROJECT_CONCEPT.md`](docs/PROJECT_CONCEPT.md), wajib dibaca sebelum berkontribusi. Ringkasannya:
-
-- **Server Component sebagai bawaan.** Gunakan `"use client"` hanya untuk bagian yang membutuhkan API browser, state interaktif, atau WebGL.
-- **Akses data** melalui instans `prisma` di `src/lib/prisma.ts`. Jangan membuat `PrismaClient` baru per request atau per komponen.
-- **TypeScript ketat.** Hindari `any`, `@ts-ignore`, dan `@ts-expect-error` tanpa alasan terdokumentasi.
-- **Validasi runtime** dengan Zod untuk setiap input dari pengguna, form admin, atau Json database.
-- **Tanpa login pengguna.** Pengunjung menikmati seluruh konten tanpa login. Progres, bookmark, dan kuis disimpan di `localStorage` via Zustand `persist`.
-- **Kuis berbasis kode.** Kuis dan scoring berada di `modules/quiz`, bukan tabel database.
-- **Styling** dengan Tailwind CSS 4.
-- **Konten studi kasus** harus memiliki sumber yang dapat diverifikasi (`CaseSource`). Statistik dan klaim dampak tidak boleh dikarang.
-- **Aksesibilitas.** Globe dan graf adalah visualisasi, bukan satu-satunya jalur navigasi; sediakan alternatif berbasis daftar yang dapat diakses keyboard.
-- **Next.js 16** memiliki perubahan API dibanding versi sebelumnya. Rujuk dokumentasi di `node_modules/next/dist/docs/` sebelum menulis kode, sebagaimana diinstruksikan di [`AGENTS.md`](AGENTS.md).
-
-## Pengujian dan Penjaminan Mutu
-
-Verifikasi yang tersedia saat ini:
-
-```bash
-npm run lint
-npm run typecheck
-npx prisma validate
-npm run build
-```
-
-Pemeriksaan manual yang disarankan untuk halaman atlas:
-
-- Uji di Chrome, Firefox, dan Safari versi terbaru.
-- Uji interaksi drag dan sentuh pada globe `cobe`.
-- Pastikan daftar dan panel studi kasus tetap berfungsi saat WebGL atau anchor positioning tidak aktif.
-
-## Deployment
-
-Kebutuhan minimum berdasarkan konfigurasi saat ini:
-
-- Runtime Node.js yang memenuhi rentang versi pada bagian Prasyarat.
-- Basis data PostgreSQL dan variabel `DATABASE_URL` pada lingkungan produksi.
-- Menjalankan `npx prisma migrate deploy` sebelum atau saat rilis untuk menerapkan migrasi. Jangan gunakan `migrate dev` atau `migrate reset` di produksi.
-- Menjalankan `npm run build`, lalu `npm run start`.
-
-## Keterbatasan Saat Ini
-
-- Rute `/cases/[slug]`, kuis, jalur keahlian, dan panel admin sedang disiapkan sesuai roadmap di `docs/PROJECT_CONCEPT.md`.
-- Beranda (`/`) masih berupa template awal.
-
-## Kontribusi
-
-Anggota tim dan agen AI wajib mengikuti [`.ai/KARSALOKA_PROJECT_RULES.md`](.ai/KARSALOKA_PROJECT_RULES.md). Pokok alur kerjanya:
-
-- Periksa kode, konfigurasi, dan skema Prisma yang ada sebelum melakukan perubahan.
-- Buat perubahan yang terfokus dan minimal; jangan menulis ulang berkas yang tidak terkait.
-- Perubahan skema basis data, autentikasi, routing, atau dependensi utama perlu disetujui tim terlebih dahulu.
-- Gunakan branch terfokus, misalnya `feature/atlas-filter` atau `fix/globe-marker`, dan pesan commit bergaya `feat(atlas): add case filtering`.
-- Jalankan lint, pemeriksaan tipe, dan build sebelum menggabungkan perubahan.
-
-## Lisensi
-
-Repositori ini belum mencantumkan berkas lisensi. Tanpa lisensi eksplisit, seluruh hak atas kode tetap dimiliki oleh pemegang hak cipta.
+| `npm run lint` | Menjalankan pemeriksaan ESLint |
+| `npm run build` | Memvalidasi integritas seluruh konten lokal (`assertContentIntegrity`) dan membangun produksi statis (`next build`) |
+| `npm run start` | Menjalankan server hasil build produksi |

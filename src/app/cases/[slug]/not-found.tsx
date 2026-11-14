@@ -1,45 +1,40 @@
+"use client";
+
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
-import { DEFAULT_LOCALE } from "@/lib/i18n/localized";
+import type { Locale } from "@/lib/i18n/localized";
+import {
+  readLocaleFromUrl,
+  subscribeLocaleChange,
+} from "@/lib/i18n/locale-events";
+import { localeHref } from "@/lib/i18n/urls";
 import { getMessages } from "@/lib/i18n/messages";
 
 export default function CaseNotFound() {
-  const t = getMessages(DEFAULT_LOCALE);
+  const locale = useSyncExternalStore(
+    subscribeLocaleChange,
+    readLocaleFromUrl,
+    () => "id" as Locale
+  );
+  const t = getMessages(locale);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
-      <div className="max-w-md w-full rounded-xl border border-slate-800 bg-slate-900/80 p-8 text-center shadow-lg space-y-4">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-400">
-          <svg
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        </div>
-
-        <h1 className="text-xl font-semibold text-slate-100">
-          {t.cases.notFound.title}
-        </h1>
-
-        <p className="text-sm text-slate-400 leading-relaxed">
+    <main
+      id="main"
+      className="wrap flex min-h-[70svh] flex-col justify-center py-20"
+    >
+      <div className="max-w-[38rem]">
+        <p className="num text-[0.875rem] t-faint tnum">404</p>
+        <h1 className="title mt-3">{t.cases.notFound.title}</h1>
+        <p className="small t-soft mt-4 max-w-[46ch]">
           {t.cases.notFound.description}
         </p>
-
-        <div className="pt-2 flex justify-center">
-          <Link
-            href="/atlas"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-5 py-2.5 text-sm font-medium text-slate-950 hover:bg-amber-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-          >
-            <span aria-hidden="true">&larr;</span>
-            <span>{t.common.backToAtlas}</span>
+        <div className="mt-8 flex flex-wrap gap-2">
+          <Link href={localeHref("/atlas", locale)} className="btn btn-ink">
+            {t.common.backToAtlas}
+          </Link>
+          <Link href={localeHref("/", locale)} className="btn btn-ghost">
+            {t.common.home}
           </Link>
         </div>
       </div>

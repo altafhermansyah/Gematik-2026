@@ -1,80 +1,75 @@
-import { prisma } from "@/lib/prisma";
-import { pickLocalized, DEFAULT_LOCALE } from "@/lib/i18n/localized";
-import type { AtlasCase } from "./types";
+import type { Locale } from "@/lib/i18n/localized";
+import { DEFAULT_LOCALE, resolveLocalized } from "@/lib/i18n/localized";
+import {
+  getDomainBySlug,
+  getDomains,
+  getPublishedCases,
+} from "@/modules/content/store";
+import type { AtlasCase, AtlasDomain } from "./types";
 
 /**
- * Fetches published cases for the Atlas module.
- * Maps localized JSON fields to plain strings on the server.
- * Skips and logs rows whose localized JSON text fails validation with contextual metadata.
- * Database errors are intentionally uncaught here to propagate to the route error boundary.
+ * Mengambil daftar bidang masalah terurut untuk filter dan legenda Atlas.
  */
-export async function getAtlasCases(): Promise<AtlasCase[]> {
-  const rows = await prisma.case.findMany({
-    where: { status: "PUBLISHED" },
-    select: {
-      slug: true,
-      title: true,
-      summary: true,
-      lat: true,
-      lng: true,
-      countryCode: true,
-      region: true,
+export function getAtlasDomains(locale: Locale = DEFAULT_LOCALE): AtlasDomain[] {
+  return getDomains().map((domain) => ({
+    slug: domain.slug,
+    name: resolveLocalized(domain.name, `${domain.slug}.name`, locale),
+    color: domain.color,
+    order: domain.order,
+  }));
+}
+
+/**
+ * Mengambil kasus terbit untuk Atlas.
+ *
+ * Sebelumnya fungsi ini melakukan query Prisma. Sejak migrasi ke konten lokal,
+ * sumbernya adalah array bertipe di `src/content/cases` sehingga tidak ada I/O
+ * dan fungsi ini sinkron.
+ */
+export function getAtlasCases(locale: Locale = DEFAULT_LOCALE): AtlasCase[] {
+  return getPublishedCases().map((caseStudy) => {
+    const domain = getDomainBySlug(caseStudy.domainSlug);
+    if (!domain) {
+      throw new Error(
+        `Konten Atlas tidak valid: kasus "${caseStudy.slug}" merujuk domain tak dikenal "${caseStudy.domainSlug}"`
+      );
+    }
+
+    return {
+      slug: caseStudy.slug,
+      title: resolveLocalized(caseStudy.title, `${caseStudy.slug}.title`, locale),
+      summary: resolveLocalized(
+        caseStudy.summary,
+        `${caseStudy.slug}.summary`,
+        locale
+      ),
+      lat: caseStudy.lat,
+      lng: caseStudy.lng,
+      countryCode: caseStudy.countryCode,
+      region: caseStudy.region,
+      featured: caseStudy.featured,
+      year: caseStudy.year,
+      sdgs: [...caseStudy.sdgs],
+      technologies: [...caseStudy.technologies],
+      metrics: caseStudy.metrics.map((metric, index) => ({
+        label: resolveLocalized(
+          metric.label,
+          `${caseStudy.slug}.metrics[${index}].label`,
+          locale
+        ),
+        value: metric.value,
+        unit: resolveLocalized(
+          metric.unit,
+          `${caseStudy.slug}.metrics[${index}].unit`,
+          locale
+        ),
+      })),
+      sourcesCount: caseStudy.sources.length,
       domain: {
-        select: {
-          slug: true,
-          name: true,
-          color: true,
-        },
+        slug: domain.slug,
+        name: resolveLocalized(domain.name, `${domain.slug}.name`, locale),
+        color: domain.color,
       },
-    },
-    orderBy: [
-      { featured: "desc" },
-      { slug: "asc" },
-    ],
+    };
   });
-
-  const validCases: AtlasCase[] = [];
-
-  for (const row of rows) {
-    const titleResult = pickLocalized(row.title, DEFAULT_LOCALE);
-    if (!titleResult.ok) {
-      console.error(
-        `[modules/atlas/queries] getAtlasCases: case "${row.slug}" field "title" failed validation: ${titleResult.error}`
-      );
-      continue;
-    }
-
-    const summaryResult = pickLocalized(row.summary, DEFAULT_LOCALE);
-    if (!summaryResult.ok) {
-      console.error(
-        `[modules/atlas/queries] getAtlasCases: case "${row.slug}" field "summary" failed validation: ${summaryResult.error}`
-      );
-      continue;
-    }
-
-    const domainNameResult = pickLocalized(row.domain.name, DEFAULT_LOCALE);
-    if (!domainNameResult.ok) {
-      console.error(
-        `[modules/atlas/queries] getAtlasCases: case "${row.slug}" field "domain.name" failed validation: ${domainNameResult.error}`
-      );
-      continue;
-    }
-
-    validCases.push({
-      slug: row.slug,
-      title: titleResult.value,
-      summary: summaryResult.value,
-      lat: row.lat,
-      lng: row.lng,
-      countryCode: row.countryCode,
-      region: row.region,
-      domain: {
-        slug: row.domain.slug,
-        name: domainNameResult.value,
-        color: row.domain.color,
-      },
-    });
-  }
-
-  return validCases;
 }

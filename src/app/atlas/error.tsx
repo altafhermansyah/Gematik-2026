@@ -1,7 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
-import { DEFAULT_LOCALE } from "@/lib/i18n/localized";
+import { useEffect, useSyncExternalStore } from "react";
+import Link from "next/link";
+import type { Locale } from "@/lib/i18n/localized";
+import {
+  readLocaleFromUrl,
+  subscribeLocaleChange,
+} from "@/lib/i18n/locale-events";
+import { localeHref } from "@/lib/i18n/urls";
 import { getMessages } from "@/lib/i18n/messages";
 
 type AtlasErrorProps = {
@@ -10,49 +16,36 @@ type AtlasErrorProps = {
 };
 
 export default function AtlasError({ error, reset }: AtlasErrorProps) {
-  const t = getMessages(DEFAULT_LOCALE);
+  const locale = useSyncExternalStore(
+    subscribeLocaleChange,
+    readLocaleFromUrl,
+    () => "id" as Locale
+  );
+  const t = getMessages(locale);
 
   useEffect(() => {
-    // Log contextual diagnostics for developers without leaking sensitive data to users
-    console.error("[app/atlas/error] Atlas route error encountered:", error);
+    // Contextual diagnostic for developers; no user data is included.
+    console.error("[app/atlas/error] Atlas route error:", error);
   }, [error]);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
-      <div className="max-w-md w-full rounded-xl border border-slate-800 bg-slate-900/80 p-8 text-center shadow-lg">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 text-amber-500 mb-4">
-          <svg
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-            />
-          </svg>
-        </div>
-
-        <h1 className="text-xl font-semibold text-slate-100">
-          {t.atlas.error.title}
-        </h1>
-
-        <p className="mt-2 text-sm text-slate-400 leading-relaxed">
+    <main
+      id="main"
+      className="night-stage night flex min-h-svh flex-col justify-center px-[var(--gutter)] py-20"
+    >
+      <div className="mx-auto w-full max-w-[34rem]">
+        <p className="micro t-faint">KarsaLoka</p>
+        <h1 className="title mt-4">{t.atlas.error.title}</h1>
+        <p className="small t-soft mt-4 max-w-[42ch]">
           {t.atlas.error.description}
         </p>
-
-        <div className="mt-6 flex justify-center">
-          <button
-            type="button"
-            onClick={() => reset()}
-            className="rounded-lg bg-amber-500 px-5 py-2.5 text-sm font-medium text-slate-950 hover:bg-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 transition-colors"
-          >
+        <div className="mt-8 flex flex-wrap gap-2">
+          <button type="button" onClick={() => reset()} className="stage-control">
             {t.common.tryAgain}
           </button>
+          <Link href={localeHref("/", locale)} className="stage-control">
+            {t.common.home}
+          </Link>
         </div>
       </div>
     </main>

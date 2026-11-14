@@ -1,65 +1,50 @@
-import { DEFAULT_LOCALE } from "@/lib/i18n/localized";
+"use client";
+
+import { useSyncExternalStore } from "react";
+import type { Locale } from "@/lib/i18n/localized";
+import {
+  readLocaleFromUrl,
+  subscribeLocaleChange,
+} from "@/lib/i18n/locale-events";
 import { getMessages } from "@/lib/i18n/messages";
 
 export default function AtlasLoading() {
-  const t = getMessages(DEFAULT_LOCALE);
+  const locale = useSyncExternalStore(
+    subscribeLocaleChange,
+    readLocaleFromUrl,
+    () => "id" as Locale
+  );
+  const t = getMessages(locale);
 
   return (
     <main
+      id="main"
       role="status"
       aria-label={t.atlas.loading.ariaLabel}
-      className="min-h-screen bg-slate-950 text-slate-100"
+      className="night-stage night"
     >
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-pulse">
-        {/* Header skeleton */}
-        <div className="mb-8">
-          <div className="h-8 w-64 rounded bg-slate-800/80" />
-          <div className="mt-2.5 h-4 w-96 max-w-full rounded bg-slate-800/50" />
-        </div>
-
-        {/* 2-column layout matching AtlasExplorer */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Globe area skeleton */}
-          <div className="lg:col-span-7 w-full flex items-center justify-center">
-            <div className="aspect-square w-full max-w-[720px] rounded-full border border-slate-800/50 bg-slate-900/40 flex items-center justify-center">
-              <div className="h-1/2 w-1/2 rounded-full border border-dashed border-slate-800" />
+      <div className="wrap py-16">
+        <div className="grid animate-pulse gap-10 lg:grid-cols-[17.5rem_minmax(0,1fr)]">
+          <div className="space-y-4">
+            <div className="h-9 w-40 rounded-lg bg-[rgb(150_175_230_/_0.14)]" />
+            <div className="h-4 w-full rounded bg-[rgb(150_175_230_/_0.09)]" />
+            <div className="h-4 w-4/5 rounded bg-[rgb(150_175_230_/_0.09)]" />
+            <div className="mt-8 h-9 w-full border-b border-[rgb(150_175_230_/_0.2)]" />
+            <div className="space-y-2 pt-3">
+              {[1, 2, 3, 4, 5, 6].map((row) => (
+                <div
+                  key={row}
+                  className="h-7 w-full border-b border-[rgb(150_175_230_/_0.12)]"
+                />
+              ))}
             </div>
           </div>
-
-          {/* Details & list column skeleton */}
-          <div className="lg:col-span-5 w-full flex flex-col gap-6">
-            {/* Panel skeleton */}
-            <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-5 space-y-4">
-              <div className="flex justify-between">
-                <div className="h-4 w-28 rounded bg-slate-800" />
-                <div className="h-4 w-16 rounded bg-slate-800" />
-              </div>
-              <div className="h-6 w-3/4 rounded bg-slate-800" />
-              <div className="space-y-2">
-                <div className="h-3.5 w-full rounded bg-slate-800/60" />
-                <div className="h-3.5 w-5/6 rounded bg-slate-800/60" />
-              </div>
-            </div>
-
-            {/* List skeleton */}
-            <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 space-y-3">
-              <div className="h-4 w-20 rounded bg-slate-800" />
-              <div className="divide-y divide-slate-800/60 border-y border-slate-800/60">
-                {[1, 2, 3, 4, 5].map((item) => (
-                  <div key={item} className="py-3.5 px-3 space-y-2">
-                    <div className="flex justify-between">
-                      <div className="h-4 w-1/2 rounded bg-slate-800/70" />
-                      <div className="h-3 w-12 rounded bg-slate-800/50" />
-                    </div>
-                    <div className="h-3 w-24 rounded bg-slate-800/40" />
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div className="flex items-center justify-center">
+            <div className="aspect-square w-full max-w-[38rem] rounded-full border border-[rgb(93_240_168_/_0.22)] bg-[radial-gradient(circle_at_50%_40%,rgba(26,56,120,0.22),transparent_65%)]" />
           </div>
         </div>
+        <span className="sr-only">{t.atlas.loading.srText}</span>
       </div>
-      <span className="sr-only">{t.atlas.loading.srText}</span>
     </main>
   );
 }

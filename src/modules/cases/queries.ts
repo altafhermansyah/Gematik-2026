@@ -1,142 +1,97 @@
-import { cache } from "react";
-import { prisma } from "@/lib/prisma";
-import { pickLocalized, DEFAULT_LOCALE } from "@/lib/i18n/localized";
-import { CaseMetricsSchema } from "./schemas";
-import type { CaseDetail, CaseMetric } from "./types";
+import type { Locale } from "@/lib/i18n/localized";
+import { DEFAULT_LOCALE, resolveLocalized } from "@/lib/i18n/localized";
+import { getDomainBySlug, getPublishedCaseBySlug } from "@/modules/content/store";
+import type { CaseDetail } from "./types";
 
 /**
- * Fetches a single published case by its unique slug.
- * Resolves localized JSON fields to plain strings on the server.
- * Explicitly validates `metrics` JSON using Zod.
- * Throws on data integrity failures so the route error boundary handles invalid database data.
- * Wrapped with React cache() to deduplicate requests between generateMetadata and the page component.
+ * Mengambil satu kasus terbit berdasarkan slug.
+ *
+ * Sebelumnya fungsi ini melakukan query Prisma lalu memvalidasi `metrics`
+ * dengan Zod. Pada model konten lokal, `metrics` sudah berbentuk tipe yang
+ * dijamin `satisfies` dan diperiksa `assertContentIntegrity()`, sehingga
+ * validasi runtime dan pembungkus `cache()` (untuk dedup antara
+ * `generateMetadata` dan komponen halaman) tidak lagi diperlukan: tidak ada I/O
+ * yang bisa diulang.
+ *
+ * Mengembalikan `null` bila slug tidak ada atau kasusnya belum terbit, sehingga
+ * halaman bisa memanggil `notFound()`.
  */
-export const getCaseBySlug = cache(
-  async (slug: string): Promise<CaseDetail | null> => {
-    const row = await prisma.case.findFirst({
-      where: {
-        slug,
-        status: "PUBLISHED",
-      },
-      select: {
-        slug: true,
-        title: true,
-        summary: true,
-        problem: true,
-        solution: true,
-        aiRole: true,
-        impact: true,
-        metrics: true,
-        countryCode: true,
-        region: true,
-        year: true,
-        sdgs: true,
-        technologies: true,
-        domain: {
-          select: {
-            slug: true,
-            name: true,
-            color: true,
-          },
-        },
-        sources: {
-          select: {
-            title: true,
-            publisher: true,
-            url: true,
-            accessedAt: true,
-          },
-          orderBy: {
-            title: "asc",
-          },
-        },
-      },
-    });
-
-    if (!row) {
-      return null;
-    }
-
-    // Helper for resolving required localized fields; throws on data integrity failure
-    const resolveField = (field: unknown, fieldName: string): string => {
-      const res = pickLocalized(field, DEFAULT_LOCALE);
-      if (!res.ok) {
-        console.error(
-          `[modules/cases/queries] getCaseBySlug: case "${slug}" field "${fieldName}" failed validation: ${res.error}`
-        );
-        throw new Error(
-          `Data integrity error: case "${slug}" field "${fieldName}" failed validation (${res.error})`
-        );
-      }
-      return res.value;
-    };
-
-    const title = resolveField(row.title, "title");
-    const summary = resolveField(row.summary, "summary");
-    const problem = resolveField(row.problem, "problem");
-    const solution = resolveField(row.solution, "solution");
-    const aiRole = resolveField(row.aiRole, "aiRole");
-    const impact = resolveField(row.impact, "impact");
-    const domainName = resolveField(row.domain.name, "domain.name");
-
-    // Validate and resolve metrics if present
-    let metrics: CaseMetric[] = [];
-    if (row.metrics !== null && row.metrics !== undefined) {
-      const parsedMetrics = CaseMetricsSchema.safeParse(row.metrics);
-      if (!parsedMetrics.success) {
-        console.error(
-          `[modules/cases/queries] getCaseBySlug: case "${slug}" field "metrics" failed Zod validation: ${parsedMetrics.error.message}`
-        );
-        throw new Error(
-          `Data integrity error: case "${slug}" field "metrics" failed Zod validation`
-        );
-      }
-
-      metrics = parsedMetrics.data.map((m, index) => {
-        const labelRes = pickLocalized(m.label, DEFAULT_LOCALE);
-        if (!labelRes.ok) {
-          console.error(
-            `[modules/cases/queries] getCaseBySlug: case "${slug}" metrics[${index}].label failed validation: ${labelRes.error}`
-          );
-          throw new Error(
-            `Data integrity error: case "${slug}" metrics[${index}].label failed validation`
-          );
-        }
-        return {
-          label: labelRes.value,
-          value: m.value,
-          unit: m.unit,
-        };
-      });
-    }
-
-    const sources = row.sources.map((s) => ({
-      title: s.title,
-      publisher: s.publisher,
-      url: s.url,
-      accessedAt: s.accessedAt ? s.accessedAt.toISOString() : null,
-    }));
-
-    return {
-      slug: row.slug,
-      title,
-      summary,
-      problem,
-      solution,
-      aiRole,
-      impact,
-      metrics,
-      countryCode: row.countryCode,
-      region: row.region,
-      year: row.year,
-      sdgs: row.sdgs,
-      technologies: row.technologies,
-      domain: {
-        slug: row.domain.slug,
-        name: domainName,
-        color: row.domain.color,
-      },
-      sources,
-    };
+export function getCaseBySlug(
+  slug: string,
+  locale: Locale = DEFAULT_LOCALE
+): CaseDetail | null {
+  const caseStudy = getPublishedCaseBySlug(slug);
+  if (!caseStudy) {
+    return null;
   }
-);
+
+  const domain = getDomainBySlug(caseStudy.domainSlug);
+  if (!domain) {
+    throw new Error(
+      `Konten kasus tidak valid: kasus "${caseStudy.slug}" merujuk domain tak dikenal "${caseStudy.domainSlug}"`
+    );
+  }
+
+  return {
+    slug: caseStudy.slug,
+    title: resolveLocalized(caseStudy.title, `${caseStudy.slug}.title`, locale),
+    summary: resolveLocalized(
+      caseStudy.summary,
+      `${caseStudy.slug}.summary`,
+      locale
+    ),
+    problem: resolveLocalized(
+      caseStudy.problem,
+      `${caseStudy.slug}.problem`,
+      locale
+    ),
+    solution: resolveLocalized(
+      caseStudy.solution,
+      `${caseStudy.slug}.solution`,
+      locale
+    ),
+    aiRole: resolveLocalized(
+      caseStudy.aiRole,
+      `${caseStudy.slug}.aiRole`,
+      locale
+    ),
+    impact: resolveLocalized(
+      caseStudy.impact,
+      `${caseStudy.slug}.impact`,
+      locale
+    ),
+    metrics: caseStudy.metrics.map((metric, index) => ({
+      label: resolveLocalized(
+        metric.label,
+        `${caseStudy.slug}.metrics[${index}].label`,
+        locale
+      ),
+      value: metric.value,
+      unit: resolveLocalized(
+        metric.unit,
+        `${caseStudy.slug}.metrics[${index}].unit`,
+        locale
+      ),
+      quote: metric.quote,
+      sourceUrl: metric.sourceUrl,
+    })),
+    countryCode: caseStudy.countryCode,
+    region: caseStudy.region,
+    lat: caseStudy.lat,
+    lng: caseStudy.lng,
+    year: caseStudy.year,
+    sdgs: [...caseStudy.sdgs],
+    technologies: [...caseStudy.technologies],
+    domain: {
+      slug: domain.slug,
+      name: resolveLocalized(domain.name, `${domain.slug}.name`, locale),
+      color: domain.color,
+    },
+    sources: caseStudy.sources.map((source) => ({
+      title: source.title,
+      publisher: source.publisher,
+      url: source.url,
+      accessedAt: source.accessedAt,
+    })),
+  };
+}

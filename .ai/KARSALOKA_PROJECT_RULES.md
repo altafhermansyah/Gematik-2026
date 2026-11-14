@@ -2,11 +2,11 @@
 
 > **Document status:** Mandatory project standard
 > **Purpose:** Shared source of truth for human developers and AI coding agents
-> **Architecture:** Modular Monolith
-> **Primary stack:** Next.js + React + TypeScript + Prisma + PostgreSQL
+> **Architecture:** Modular Monolith (100% Full-Local Content & Client Storage, Zero Database, Zero Admin Panel)
+> **Primary stack:** Next.js + React + TypeScript + Tailwind CSS + Local Typed Content (`src/content/`)
 > **Primary visual technology:** cobe
 > **Project concept:** Global problem → innovation → personal path
-> **Precedence statement:** `docs/PROJECT_CONCEPT.md` is the authority for product scope, page map, and what each database table is responsible for. `KARSALOKA_PROJECT_RULES.md` remains the authority for engineering, design, accessibility, and process rules. Where the two overlap, engineering rules in this document must stay consistent with `docs/PROJECT_CONCEPT.md`. If a conflict arises between them, stop and ask instead of choosing.
+> **Precedence statement:** `docs/PROJECT_CONCEPT.md` is the authority for product scope, page map, and local content entity responsibilities. `KARSALOKA_PROJECT_RULES.md` remains the authority for engineering, design, accessibility, and process rules. Where the two overlap, engineering rules in this document must stay consistent with `docs/PROJECT_CONCEPT.md`. If a conflict arises between them, stop and ask instead of choosing.
 
 ---
 
@@ -17,7 +17,7 @@ This file is the **project constitution**. Every human contributor and every AI 
 When another instruction conflicts with this document:
 
 1. Follow explicit human instructions for the current task.
-2. Refer to `docs/PROJECT_CONCEPT.md` as the authority for product scope, page map, and database table responsibilities; engineering rules in this document must stay consistent with it. If they conflict, stop and ask.
+2. Refer to `docs/PROJECT_CONCEPT.md` as the authority for product scope, page map, and local content entity responsibilities; engineering rules in this document must stay consistent with it. If they conflict, stop and ask.
 3. Preserve the architecture and invariants in this document unless the human explicitly approves a change.
 4. Never make a potentially destructive architectural change silently.
 5. When uncertain, inspect the existing implementation and dependencies first rather than guessing.
@@ -161,7 +161,7 @@ Examples:
 
 - status definitions → one domain/constants source
 - quiz scoring rules → one scoring module
-- Prisma data access → domain/data layer
+- local content access → `src/modules/content/store.ts`
 - design tokens → central theme/tokens
 - validation schemas → central schema per domain/use case
 
@@ -180,37 +180,34 @@ Prefer descriptive names and small modules over clever one-liners.
 The application is a **modular monolith**:
 
 ```text
-                 Next.js Application
-                         │
-        ┌────────────────┼────────────────┐
-        │                │                │
-      Atlas            Cases           Paths
-        │                │                │
-      Quiz           Resources         Admin
-        │                │                │
-        └────────────────┼────────────────┘
-                         │
-                   Shared Kernel
-                         │
-              Prisma / PostgreSQL
+                  Next.js Application
+                          │
+         ┌────────────────┼────────────────┐
+         │                │                │
+       Atlas            Cases           Paths
+         │                │                │
+       Quiz           Resources        Progress
+         │                │                │
+         └────────────────┼────────────────┘
+                          │
+                    Shared Kernel
+                          │
+          Local Typed Content (src/content/)
 ```
 
-Modules live in one deployable application and one database, but their responsibilities remain separated. Visitors never log in; path progress, bookmarks, and quiz results live in the browser (`localStorage` through Zustand `persist`), never in the database. Only administrators log in, to manage content.
+Modules live in one deployable application backed by version-controlled local content (`src/content/`), with separated responsibilities. Visitors never log in; path progress, bookmarks, and quiz results live in the browser (`localStorage` through Zustand `persist`). There is no external database and no admin panel.
 
 ## 4.2 Suggested module boundaries
 
 ```text
 src/
 ├── app/
-│   ├── (marketing)/
 │   ├── atlas/
 │   ├── cases/
 │   │   └── [slug]/
 │   ├── paths/
 │   │   └── [slug]/
-│   ├── quiz/
-│   ├── admin/
-│   └── api/
+│   └── quiz/
 │
 ├── components/
 │   ├── ui/
@@ -218,13 +215,22 @@ src/
 │   ├── atlas/
 │   ├── cases/
 │   ├── paths/
-│   ├── quiz/
-│   └── admin/
+│   └── quiz/
+│
+├── content/
+│   ├── types.ts
+│   ├── domains.ts
+│   ├── skills.ts
+│   ├── resources.ts
+│   ├── paths.ts
+│   └── cases/
+│       └── index.ts
 │
 ├── modules/
+│   ├── content/
+│   │   ├── store.ts
+│   │   └── validate.ts
 │   ├── atlas/
-│   │   ├── components/
-│   │   ├── server/
 │   │   ├── queries.ts
 │   │   ├── types.ts
 │   │   └── constants.ts
@@ -234,24 +240,17 @@ src/
 │   │   ├── questions.ts
 │   │   ├── scoring.ts
 │   │   └── types.ts
-│   ├── progress/
-│   │   └── store.ts
-│   ├── resources/
-│   └── admin/
+│   └── progress/
+│       └── store.ts
 │
 ├── lib/
-│   ├── prisma.ts
-│   ├── auth/
-│   │   └── session.ts
+│   ├── i18n/
 │   ├── validation/
-│   ├── security/
 │   ├── utils/
 │   └── constants/
 │
 ├── hooks/
-├── styles/
-└── generated/
-    └── prisma/
+└── styles/
 ```
 
 This is a target structure, not permission to blindly restructure the repository. Preserve working code and migrate incrementally.
@@ -267,16 +266,16 @@ Application/use-case logic
  ↓
 Domain logic
  ↓
-Data access
+Content access (src/modules/content/store.ts)
  ↓
-Prisma/PostgreSQL
+Local typed content (src/content/)
 ```
 
-A UI component must not contain complicated database queries or business rules.
+A UI component must not contain complicated query/filtering business rules.
 
-A Prisma query must not know about visual concerns.
+A content query module must not know about visual concerns.
 
-A reusable UI component must not depend on a specific database table unless it is explicitly a domain component.
+A reusable UI component must not depend on a specific content entity unless it is explicitly a domain component.
 
 ## 4.4 Forbidden architecture patterns
 
@@ -285,7 +284,7 @@ Do not:
 - put all logic inside `page.tsx`
 - create a giant `utils.ts`
 - create a giant `api.ts` for unrelated domains
-- put Prisma queries directly inside reusable presentational components
+- bypass `src/modules/content/store.ts` inside reusable presentational components
 - duplicate the same data transformation in multiple pages
 - import an internal module's private implementation from another module
 - use circular module dependencies
@@ -418,154 +417,53 @@ Validate:
 - form submissions
 - query parameters when structurally important
 - route parameters where needed
-- API request bodies
-- admin mutations
-- imported content
+- persisted `localStorage` state on rehydration
+- local content invariants via `assertContentIntegrity()`
 
 ---
 
-# 7. Prisma & PostgreSQL Rules
+# 7. Local Content Store & Integrity Rules (`src/content/` & `src/modules/content/`)
 
-## 7.1 Database access & architecture
+## 7.1 Full-local content architecture (Zero Database)
 
-Prisma is the application's primary database access layer. Provider is PostgreSQL using `@prisma/adapter-pg`.
+Since the 2026-10-25 architectural migration, KarsaLoka operates **100% locally without PostgreSQL, Prisma, or any external database**:
 
-The database schema consists of exactly 10 tables:
-`AdminUser`, `Domain`, `Case`, `CaseSource`, `Path`, `PathNode`, `PathEdge`, `CasePath`, `Skill`, and `Resource`.
+- All curated entities (`Domain`, `CaseStudy`, `Skill`, `Resource`, `LearningPath`) live as strictly typed TypeScript modules (`as const satisfies ...`) inside `src/content/`.
+- All read operations go through the single access point `src/modules/content/store.ts` (`getDomains()`, `getPublishedCases()`, `getPublishedCaseBySlug()`, `getPaths()`, `getSkills()`, `getResourcesBySkill()`).
+- Do not re-introduce Prisma, database drivers, or runtime SQL queries.
 
-Use the existing Prisma client setup in `src/lib/prisma.ts`. Do not instantiate a new `PrismaClient` per request/component.
-The generated client lives in `src/generated/prisma` and is gitignored.
+## 7.2 Build-time integrity verification (`assertContentIntegrity`)
 
-## 7.2 Schema changes
+`src/modules/content/validate.ts` enforces cross-entity invariants automatically when `src/modules/content/store.ts` is first accessed (including during `generateStaticParams` at `next build` time):
 
-Never silently alter the Prisma schema for convenience.
-
-All schema changes go through `prisma migrate dev`. **Never use `db push`** on shared databases.
-
-Before a schema change, determine:
-
-1. whether the feature truly needs a new field/table
-2. whether an existing relation already represents the concept
-3. whether the change impacts seed data
-4. whether indexes are needed
-5. whether existing code will break
-
-Destructive changes require explicit human approval.
-
-## 7.3 Migration rules
-
-All schema changes go through `prisma migrate dev`.
-`prisma/migrations` is committed to version control.
-
-In Prisma 7, `migrate dev` does not automatically regenerate the client: run `prisma generate` after every migration (the `npm run db:migrate` script runs both: `prisma migrate dev && prisma generate`).
-
-Do not edit an already-applied migration by hand.
-Do not use destructive database reset commands against shared/important databases.
-
-## 7.4 Query efficiency
-
-Avoid N+1 queries.
-
-Prefer deliberate `select` projections over retrieving entire records when only a subset is needed.
-
-Example principle:
-
-```ts
-select: {
-  id: true,
-  slug: true,
-  title: true,
-}
-```
-
-Use `include` only when the related data is genuinely required.
-
-## 7.5 Indexing
-
-Index fields commonly used for:
-
-- unique lookup
-- slug lookup
-- filtering
-- sorting
-- foreign-key joins
-- frequently queried composite conditions
-
-`Case.sdgs` is `Int[]` and `Case.technologies` is `String[]` (native PostgreSQL arrays, GIN-indexed: `@@index([sdgs], type: Gin)` and `@@index([technologies], type: Gin)`).
-
-Do not blindly index every field.
-
-## 7.6 Transactions
-
-Use database transactions when several writes must succeed or fail together.
-
-Do not use transactions for independent reads merely as a habit.
-
-## 7.7 Pagination
-
-Any potentially unbounded collection must have a defined retrieval strategy.
-
-Use cursor pagination for large/high-growth datasets when appropriate.
-
-For the curated case library, simple pagination or bounded retrieval is acceptable if the dataset remains intentionally small.
-
-## 7.8 Seed rules
-
-Seed operations must follow strict integrity constraints:
-
-- The seed wipes content tables, but **never wipes `AdminUser`**.
-- Refuses to run when `NODE_ENV=production` unless `SEED_ALLOW_WIPE` is set.
-- The seed must fail loudly on integrity violations:
-  - a `PUBLISHED` case without at least one source (`CaseSource`)
-  - a `PathEdge` between nodes of different paths
-  - any quiz-referenced path or skill slug that does not exist in the database/seed.
-
-## 7.9 Localized text & content integrity
-
-- Localized text is stored as Json `{ "id": string, "en": string }` and **must be validated with Zod** when read; no raw type assertions (e.g. `as LocalizedText`) on Json.
-- Published content rules: a `PUBLISHED` case must have at least one source and both locales (`id` and `en`) filled.
-- The `metrics` field contains only verified numbers from verifiable sources; no fabricated statistics.
+- Unique `slug` values across `domains`, `cases`, `skills`, and `paths`.
+- Every `PUBLISHED` case must have non-empty bilingual text (`id` and `en`) for `title`, `summary`, `problem`, `solution`, `aiRole`, and `impact`, and at least one verifiable entry in `sources`.
+- Valid ISO-2 uppercase `countryCode`, valid `lat` (`-90..90`) and `lng` (`-180..180`), and no placeholder `(0, 0)` coordinates.
+- Every metric in `CaseStudy.metrics` must include a non-empty verbatim `quote` and a `sourceUrl` that matches one of the case's `sources`.
+- All `LearningPath.edges` must form a valid DAG (no cycles) connecting skills present in that path.
 
 ---
 
 # 8. Domain Rules
 
-## 8.1 Core domain entities (10 tables)
-
-The database schema is strictly structured into 10 tables:
+## 8.1 Core domain entities (Local Typed Modules)
 
 ```text
-Domain 1──∞ Case 1──∞ CaseSource
-Case ∞──∞ Path                        (lewat CasePath)
-Domain 1──∞ Path 1──∞ PathNode ∞──1 Skill 1──∞ Resource
-PathNode ∞──∞ PathNode                (lewat PathEdge = prasyarat)
-AdminUser                             (berdiri sendiri)
+Domain (6 domains) 1──∞ CaseStudy (curated cases with embedded sources & metrics)
+CaseStudy ∞──∞ LearningPath            (via CaseStudy.paths: CasePathLink[])
+LearningPath 1──∞ PathNode ∞──1 Skill 1──∞ Resource
+PathNode ∞──∞ PathNode                 (via LearningPath.edges: [fromSlug, toSlug][])
 ```
 
-Table responsibilities (from `docs/PROJECT_CONCEPT.md` §9):
+Entity responsibilities:
 
-| Table | Responsibility |
-|---|---|
-| `Domain` | Kategori bidang: slug, nama (id/en), warna, urutan. Hampir statis (6 baris). |
-| `Case` | Studi kasus: teks bilingual (judul, ringkasan, masalah, solusi, peran AI, dampak), lokasi (`lat`, `lng`, negara, region), `sdgs Int[]`, `technologies String[]`, `status`, `featured`, `metrics`. |
-| `CaseSource` | Sumber rujukan per kasus: judul, penerbit, URL, tanggal akses. |
-| `Path` | Satu jalur belajar: judul, deskripsi, level, estimasi jam, `status`. `domainId` opsional karena jalur dasar berlaku lintas bidang. |
-| `PathNode` | Satu langkah dalam jalur: skill yang dipelajari, tipe (`CONCEPT`/`PRACTICE`/`PROJECT`), urutan, posisi di kanvas (`posX`/`posY`), tugas. |
-| `PathEdge` | Prasyarat antar node (`from → to`). Kedua node harus satu jalur. |
-| `Skill` | Katalog skill yang dipakai ulang di banyak jalur. |
-| `Resource` | Materi belajar per skill: tipe, judul, URL, penyedia, bahasa, gratis atau tidak. |
-| `CasePath` | Menghubungkan kasus dan jalur, dengan `relevance` (1–3) dan catatan alasan. |
-| `AdminUser` | Akun admin: email dan `passwordHash` (bcrypt). Tidak ada pendaftaran publik; dibuat lewat seed dari `.env`. |
-
-### Intentionally NOT database tables (from `docs/PROJECT_CONCEPT.md` §9.5):
-
-| Concern | Location / Mechanism |
-|---|---|
-| Pertanyaan kuis dan bobotnya | Kode: `modules/quiz/questions.ts` |
-| Skoring rekomendasi | Fungsi murni `recommendPath()` |
-| Progres node, bookmark, hasil kuis | `localStorage` lewat Zustand `persist` |
-| Sesi admin | Cookie bertanda tangan (`jose`; `httpOnly`, `secure` in production, `SameSite=Lax`) |
-| Teks antarmuka dua bahasa | File pesan, bukan database |
+| Entity | Location | Responsibility |
+|---|---|---|
+| `Domain` | `src/content/domains.ts` | 6 problem domains (`climate`, `food`, `health`, `education`, `disaster`, `inclusion`) with bilingual names and 6-digit hex colors. |
+| `CaseStudy` | `src/content/cases/*.ts` | Bilingual case study narratives, coordinates (`lat`, `lng`, `countryCode`, `region`), `sdgs`, `technologies`, audited `metrics` (with verbatim `quote` + `sourceUrl`), and `sources`. |
+| `LearningPath` | `src/content/paths.ts` | Learning roadmaps with ordered `nodes` (`PathNode[]`) and prerequisite `edges` (`[fromSkillSlug, toSkillSlug][]`). |
+| `Skill` | `src/content/skills.ts` | Reusable skill definitions referenced by path nodes and resources. |
+| `Resource` | `src/content/resources.ts` | Curated learning materials linked to skills by `skillSlug`. |
 
 ## 8.2 Case content quality
 
@@ -582,22 +480,19 @@ Do not fabricate:
 
 Content should distinguish clearly between:
 
-- factual evidence
+- factual evidence (backed by verbatim `quote` + `sourceUrl`)
 - interpretation
 - editorial explanation
 
 ## 8.3 Content scope
 
-Initial target:
+Target:
 
-- approximately 12–15 curated cases
-- 5–6 problem/technology fields
-- 4–5 skill paths
-- approximately 6–10 nodes per path
+- **16 curated `PUBLISHED` cases** across all 6 domains and 11 countries (including 3 credible Indonesian case studies and **41 verified metrics**)
+- 6 problem domains
+- curated skill paths (`3` paths), skills (`14` skills), and resources (`26` resources)
 
-Scope may be reduced for quality and reliability.
-
-Quality beats quantity.
+Quality and verifiability beat quantity.
 
 ---
 
@@ -605,11 +500,11 @@ Quality beats quantity.
 
 ## 9.1 cobe
 
-Use **cobe** (`cobe@2.x`) as the primary globe rendering library.
+Use **cobe** (`cobe@2.x`) as the primary interactive explorer globe on `/atlas`.
 
 Do not install or introduce another globe engine unless explicitly approved.
 
-No `react-globe.gl` or `three` (Three.js / react-three-fiber).
+> **Homepage exception (2026-11-13):** `/` uses self-hosted `three@0.143.0` (`WebGL1Renderer` in `PlanetCanvas.tsx`) and `lenis` with local `public/globe/` + `public/draco/` assets and WebGL fallback for the GEMATIK VI deep-space showcase. Keep `cobe@2.0.1` on `/atlas` (`AtlasGlobe.tsx`), and avoid `react-globe.gl` and `react-three-fiber`.
 
 ## 9.2 Globe responsibilities
 
@@ -704,12 +599,12 @@ Provide an alternative list/timeline representation when necessary.
 
 ## 11.1 Quiz as code
 
-The diagnostic quiz lives entirely in code, not in the database:
+The diagnostic quiz lives entirely in code:
 
-- Questions, options, and weights live in `modules/quiz/` as typed data (`questions.ts`); scoring is a pure function (`scoring.ts` / `recommendPath()`) with comprehensive unit tests. There are no quiz tables in the database.
+- Questions, options, and weights live in `modules/quiz/` as typed data (`questions.ts`); scoring is a pure function (`scoring.ts` / `recommendPath()`) with comprehensive unit tests.
 - Use deterministic, rule-based scoring.
 - Do not make an external LLM/API a critical dependency for the core quiz. Core functionality must work offline from external AI services.
-- Because the quiz references path and skill slugs without foreign keys, there must be a validation check (script or test) ensuring every referenced slug exists in the database/seed. This check must run in CI or as part of the seed validation.
+- Every path and skill slug referenced by the quiz must exist in `src/content/paths.ts` and `src/content/skills.ts` and be verified by `assertContentIntegrity()`.
 
 ## 11.2 Scoring
 
@@ -784,6 +679,8 @@ Suggested foundation:
 - highly readable grotesk/sans-serif for interface content
 
 Color values must be centralized as design tokens.
+
+> **Cosmos Homepage palette note (2026-11-13):** `/` extends the palette with `--cosmos-bg: #04060f`, `--cosmos-ink: #f3f6ff`, `--cosmos-muted: #a6b2d0`, `--cosmos-accent: #5df0a8`, and translucent glass surfaces (`rgba(12, 18, 38, .62)`) layered over the 3D Earth canvas — using solid colors without gradient-clipped text. `/atlas` keeps dark `#07120e` (`--night`), and `/cases/[slug]` keeps paper `#ECEEE2` (`--paper`).
 
 ## 13.2 Anti-AI-slop rules
 
@@ -940,7 +837,6 @@ Especially:
 - quiz
 - graph
 - path / progress view
-- admin tables
 
 ## 14.2 Touch targets
 
@@ -1003,7 +899,7 @@ Aim for:
 - minimal hydration
 - stable layout
 - efficient image loading
-- efficient database queries
+- zero-latency local content queries
 - minimal client state
 - controlled animation costs
 
@@ -1059,10 +955,10 @@ For each new feature, ask:
 
 # 17. Loading, Empty, Error, and Success States
 
-Every meaningful asynchronous feature must define:
+Every meaningful interactive feature must define:
 
 ```text
-Loading
+Loading /Fallback
 Empty
 Error
 Success
@@ -1073,24 +969,15 @@ Do not design only the happy path.
 Examples:
 
 ### Atlas
-- loading cases
-- no cases match filter
-- database failure
-- successful marker selection
+- WebGL initialization / fallback state
+- no cases match filter (empty state with reset filter action)
+- successful marker selection & camera focus
 
 ### Quiz
 - loading quiz
 - validation error
 - incomplete submission
 - result
-
-### Admin
-- loading table
-- empty table
-- unauthorized
-- validation failure
-- mutation failure
-- successful save
 
 ---
 
@@ -1135,55 +1022,29 @@ unless the ignored failure is explicitly intentional and documented.
 
 # 19. Security Rules
 
-Assume every client input is untrusted.
+Assume every client input (URL query parameters, `localStorage` payloads) is untrusted.
 
 Mandatory:
 
-- validate inputs server-side
-- authorize admin actions server-side
-- never trust a client-side role flag
+- validate and normalize query inputs server-side
+- validate `localStorage` payloads on rehydration before use
 - never expose secrets to client bundles
-- keep credentials in environment variables
+- keep any environment configuration in environment variables
 - do not commit `.env` files containing secrets
 - sanitize/encode user-controlled content where applicable
-- use secure password hashing for admin credentials
 - apply least privilege
 
 Client-side checks are UX checks, not security controls.
 
 ---
 
-# 20. Authentication & Admin
+# 20. Zero-Authentication & No-Admin-Panel Policy
 
-KarsaLoka enforces an **admin-only authentication model**. Visitors and learners never log in; there are no end-user accounts, user profiles, or public registration.
+Since the 2026-10-25 architectural decision, KarsaLoka uses **zero authentication and has no admin panel (`/admin/*`)**:
 
-## 20.1 Admin account management
-
-- Admin accounts exist exclusively in the `AdminUser` table.
-- Admin accounts are created only through the database seed (`SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, minimum 12 characters).
-- There is no public registration route or signup flow.
-
-## 20.2 Password security
-
-- Passwords are hashed using `bcryptjs`; plaintext passwords are never stored, logged, or exposed in client bundles.
-- Password hashing and verification logic must reside in a dedicated authentication module (`lib/auth/`), never scattered across routes or components.
-
-## 20.3 Session management
-
-- The session is a cryptographically signed cookie (`jose`; `httpOnly`, `secure` in production, `SameSite=Lax`).
-- The cookie signing secret is supplied via an environment variable (`ADMIN_SESSION_SECRET`) and must never be committed.
-- Do not use Auth.js / NextAuth, and do not introduce database session tables.
-
-## 20.4 Authorization & verification
-
-- Hiding an admin link or route in UI does **not** secure the functionality.
-- **Every** admin Server Action and Route Handler must re-verify the session on the server before executing. A proxy or middleware check alone is not sufficient.
-- All admin mutations and writes must validate their input with Zod before touching Prisma.
-
-## 20.5 Rate limiting & enumeration prevention
-
-- Login attempts must be rate limited to prevent brute-force attacks.
-- Authentication error messages must remain generic (e.g., "Invalid email or password") and must never reveal whether an email address exists in the database.
+- Visitors and learners never log in; there are no end-user accounts, user profiles, or public registration.
+- Curated content (`domains`, `cases`, `skills`, `resources`, `paths`) is authored directly in version-controlled TypeScript files under `src/content/` and validated at build time via `assertContentIntegrity()` in `src/modules/content/validate.ts`.
+- Do not introduce `/admin/*` routes, `AdminUser` tables, session cookies, or password-hashing flows.
 
 ---
 
@@ -1328,9 +1189,9 @@ Follow the existing repository convention if already established.
 
 Use descriptive camelCase.
 
-### Database
+### Local Content Entities
 
-Keep model and field naming consistent with the existing Prisma convention.
+Keep entity and field naming consistent with `src/content/types.ts`.
 
 ### Routes
 
@@ -1366,16 +1227,15 @@ Minimum target:
 ```text
 Unit tests
   → scoring engine
-  → validation schemas
-  → important domain functions
+  → content integrity validation (assertContentIntegrity)
+  → important domain query/projection functions
 
 Integration tests
-  → database/service interactions
-  → important server actions
+  → content store & bilingual localization mapping
+  → static route generation (generateStaticParams)
 
 E2E tests
   → atlas → case → quiz → path
-  → critical admin flow
 ```
 
 Do not spend more testing effort on decorative animation than on business logic.
@@ -1392,7 +1252,6 @@ Prefer focused branches:
 feature/atlas-filter
 feature/case-detail
 feature/quiz-engine
-feature/admin-cases
 fix/globe-marker
 refactor/case-data
 ```
@@ -1443,11 +1302,10 @@ Developer A
 └── skill graph
 
 Developer B
-├── database
+├── local content store (src/content/)
 ├── domain logic
 ├── quiz
-├── admin
-└── content
+└── content verification
 ```
 
 These are ownership defaults, not permanent silos.
@@ -1478,7 +1336,7 @@ The agent MUST:
 2. inspect `package.json`
 3. inspect relevant configuration files
 4. inspect the existing module before modifying it
-5. inspect Prisma schema when touching data
+5. inspect `src/content/types.ts` and `src/modules/content/store.ts` when touching data
 6. inspect existing related components/hooks/services
 7. identify current conventions
 8. determine whether a new dependency is actually necessary
@@ -1588,9 +1446,8 @@ Good:
 
 The agent must flag changes involving:
 
-- database schema redesign
-- authentication model
-- public API contract
+- local content schema (`src/content/types.ts`) redesign
+- public route contract
 - major dependency replacement
 - routing architecture
 - state architecture
@@ -1772,25 +1629,23 @@ Before release:
 - [ ] no giant catch-all modules
 - [ ] no accidental microservice-like complexity
 
-## Database
+## Local Content & Data Integrity
 
-- [ ] migrations are reproducible
-- [ ] seed data works
-- [ ] indexes are intentional
-- [ ] no obvious N+1 queries
-- [ ] production database is not dependent on development reset commands
+- [ ] `assertContentIntegrity()` passes with zero errors
+- [ ] all `PUBLISHED` cases have complete `id`/`en` narratives and sources
+- [ ] every metric has a verbatim `quote` and matching `sourceUrl`
+- [ ] all path DAGs are acyclic and reference valid skill slugs
 
 ## Security
 
 - [ ] secrets are not committed
-- [ ] admin routes are server-authorized
-- [ ] input is validated
-- [ ] passwords are hashed
+- [ ] URL query inputs and `localStorage` state are validated
+- [ ] no external database credentials or admin endpoints exist
 - [ ] sensitive data is not leaked to client bundles
 
 ## UX
 
-- [ ] loading states
+- [ ] loading / fallback states
 - [ ] empty states
 - [ ] error states
 - [ ] success states
@@ -1890,6 +1745,8 @@ Keep architectural decisions here when they materially affect the project.
 | 2026-10-04 | Quiz in code (`modules/quiz/`) | Static typed questions and pure scoring; zero DB queries; cross-validated against seed slugs | Team |
 | 2026-10-04 | Minimal admin auth | `AdminUser` table + signed session cookie (`jose`); no Auth.js, no session tables | Team |
 | 2026-10-04 | Globe uses `cobe` v2, not `react-globe.gl` | Lighter footprint; rAF rotation via `globe.update()`; logical CSS pixel dimensions | Team |
+| 2026-10-25 | Full-local architecture (Zero DB, Zero Admin) | Removed PostgreSQL, Prisma, and `/admin/*`; all curated content lives in `src/content/` with build-time `assertContentIntegrity()` and verbatim metric quote audit trails | Team |
+| 2026-11-13 | Cosmos Homepage (`Three.js r0.143.0` + `Lenis`) with self-hosted 3D assets | Upgraded `/` to deep-space (`#04060f`) & solid mint (`#5df0a8`) interactive Earth scene (`PlanetCanvas.tsx` + `CosmosViewport.tsx`) with self-hosted `public/globe/` + `public/draco/` assets, interactive SDG & Indonesia telemetry (`InteractiveTelemetryShowcase`), bilingual `CaseMetricData.unit`, and zero high-contrast gradient text, while keeping `/atlas` on `cobe@2.0.1` and `/cases/[slug]` on paper `#ECEEE2` | Team |
 
 New architectural decisions should be appended rather than silently replacing old ones.
 
@@ -1901,6 +1758,8 @@ New architectural decisions should be appended rather than silently replacing ol
 |---|---|---|
 | 1.0.0 | 2026-10-04 | Initial project engineering/design constitution |
 | 1.1.0 | 2026-10-04 | Sync with simplified, no-user-login design, 10-table database, and client-side progress per `docs/PROJECT_CONCEPT.md` |
+| 2.0.0 | 2026-10-25 | Full migration to 100% local typed content (`src/content/`), removal of PostgreSQL/Prisma and admin panel, and production-ready `/atlas` 3D globe |
+| 2.1.0 | 2026-11-13 | Cosmos homepage overhaul (`/` using `three@0.143.0`, `lenis`, self-hosted GLB/DRACO, solid mint accents without gradient text), interactive SDG & Indonesia telemetry showcase, localized `CaseMetricData.unit`, key-synced `/atlas` filters, bilingual loading/error/not-found routes, and `npm run test` unit suite |
 
 ---
 

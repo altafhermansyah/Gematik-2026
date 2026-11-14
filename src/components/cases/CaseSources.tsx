@@ -1,72 +1,75 @@
+import type { CSSProperties } from "react";
 import type { CaseSourceItem } from "@/modules/cases/types";
-import { DEFAULT_LOCALE } from "@/lib/i18n/localized";
-import { getMessages } from "@/lib/i18n/messages";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/localized";
 
 type CaseSourcesProps = {
+  id: string;
+  index: string;
+  title: string;
   sources: CaseSourceItem[];
-  title?: string;
-  opensInNewTab?: string;
-  accessedPrefix?: string;
+  opensInNewTab: string;
+  accessedPrefix: string;
+  locale?: Locale;
 };
 
-function formatAccessDate(isoString: string): string {
-  try {
-    const date = new Date(isoString);
-    return new Intl.DateTimeFormat(DEFAULT_LOCALE, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    }).format(date);
-  } catch {
-    return isoString;
-  }
+function formatAccessDate(isoString: string, locale: Locale): string {
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) return isoString;
+  return new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(date);
 }
 
 export default function CaseSources({
-  sources,
+  id,
+  index,
   title,
+  sources,
   opensInNewTab,
   accessedPrefix,
+  locale = DEFAULT_LOCALE,
 }: CaseSourcesProps) {
-  if (!sources || sources.length === 0) {
-    return null;
-  }
-
-  const defaultMessages = getMessages(DEFAULT_LOCALE);
-  const sectionTitle = title ?? defaultMessages.cases.sections.sources;
-  const tabLabel = opensInNewTab ?? defaultMessages.common.opensInNewTab;
-  const prefix = accessedPrefix ?? defaultMessages.cases.sources.accessedPrefix;
+  if (sources.length === 0) return null;
 
   return (
-    <section className="space-y-4 pt-2 border-t border-slate-800">
-      <h2 className="text-xl font-semibold tracking-tight text-slate-100">
-        {sectionTitle}
-      </h2>
+    <section id={id} className="scroll-mt-8 mt-14 border-t hairline-strong pt-5">
+      <div className="flex items-baseline gap-3">
+        <span className="num micro t-faint tnum">{index}</span>
+        <h2 className="section-title text-[1.5rem]">{title}</h2>
+      </div>
 
-      <ol className="list-decimal list-outside pl-5 space-y-3 text-sm text-slate-300">
-        {sources.map((source, index) => (
-          <li key={index} className="leading-relaxed pl-1">
-            <div className="inline break-words [overflow-wrap:anywhere]">
+      <ol className="mt-4">
+        {sources.map((source, sourceIndex) => (
+          <li
+            key={`${source.url}-${sourceIndex}`}
+            className="stagger-row grid grid-cols-[2rem_minmax(0,1fr)] gap-2 border-b hairline py-3"
+            style={{ "--row-i": sourceIndex } as CSSProperties}
+          >
+            <span className="num micro t-faint tnum">
+              {String(sourceIndex + 1).padStart(2, "0")}
+            </span>
+            <div>
               <a
                 href={source.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-medium text-amber-400 hover:text-amber-300 underline underline-offset-4 decoration-amber-400/40 hover:decoration-amber-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded"
+                className="draw inline-flex min-h-[28px] items-center font-medium [overflow-wrap:anywhere]"
               >
                 {source.title}
-                <span className="sr-only"> {tabLabel}</span>
+                <span className="sr-only"> {opensInNewTab}</span>
               </a>
-
-              {(source.publisher || source.accessedAt) && (
-                <span className="text-slate-400 ml-1.5 text-xs">
-                  {source.publisher && <span>— {source.publisher}</span>}
-                  {source.accessedAt && (
-                    <span className="ml-1 text-slate-400">
-                      ({prefix} {formatAccessDate(source.accessedAt)})
-                    </span>
-                  )}
-                </span>
-              )}
+              <p className="micro t-soft mt-1">
+                {[
+                  source.publisher,
+                  source.accessedAt
+                    ? `${accessedPrefix} ${formatAccessDate(source.accessedAt, locale)}`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(", ")}
+              </p>
             </div>
           </li>
         ))}

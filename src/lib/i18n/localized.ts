@@ -53,3 +53,19 @@ export function pickLocalized(
     error: `Both '${locale}' and fallback '${fallbackLocale}' text values are empty.`,
   };
 }
+
+/**
+ * Resolves a pre-typed `LocalizedText` object to the requested locale string.
+ * Throws with contextual information if neither locale has non-empty content.
+ */
+export function resolveLocalized(
+  value: LocalizedText,
+  context: string,
+  locale: Locale = DEFAULT_LOCALE
+): string {
+  const result = pickLocalized(value, locale);
+  if (!result.ok) {
+    throw new Error(`Konten lokal tidak valid pada ${context}: ${result.error}`);
+  }
+  return result.value;
+}

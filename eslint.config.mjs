@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local agent tooling and vendored WASM decoders, not application source.
+    ".opencode/**",
+    "public/draco/**",
   ]),
 ]);
 

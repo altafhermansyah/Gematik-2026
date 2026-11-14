@@ -1,29 +1,37 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import SiteHeader from "@/components/site/SiteHeader";
+import SiteFooter from "@/components/site/SiteFooter";
+import CaseDetailView from "@/components/cases/CaseDetailView";
 import { getCaseBySlug } from "@/modules/cases/queries";
+import { getPublishedCases } from "@/modules/content/store";
 import { DEFAULT_LOCALE } from "@/lib/i18n/localized";
-import { getMessages } from "@/lib/i18n/messages";
-import CaseHeader from "@/components/cases/CaseHeader";
-import CaseSection from "@/components/cases/CaseSection";
-import CaseMetrics from "@/components/cases/CaseMetrics";
-import CaseSources from "@/components/cases/CaseSources";
+import { getMessages, messages } from "@/lib/i18n/messages";
 
 type CasePageProps = {
   params: Promise<{ slug: string }>;
 };
 
+/**
+ * Every published case is known at build time. This both pre-renders the page
+ * and triggers `assertContentIntegrity()`, so broken content fails the build
+ * instead of shipping silently.
+ */
+export function generateStaticParams(): { slug: string }[] {
+  return getPublishedCases().map((caseStudy) => ({ slug: caseStudy.slug }));
+}
+
+export const dynamicParams = false;
+
 export async function generateMetadata({
   params,
 }: CasePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const caseDetail = await getCaseBySlug(slug);
+  const caseDetail = getCaseBySlug(slug);
   const t = getMessages(DEFAULT_LOCALE);
 
   if (!caseDetail) {
-    return {
-      title: t.cases.meta.notFoundTitle,
-    };
+    return { title: t.cases.meta.notFoundTitle };
   }
 
   return {
@@ -34,79 +42,33 @@ export async function generateMetadata({
 
 export default async function CasePage({ params }: CasePageProps) {
   const { slug } = await params;
-  const caseDetail = await getCaseBySlug(slug);
+  const caseId = getCaseBySlug(slug, "id");
+  const caseEn = getCaseBySlug(slug, "en");
 
-  if (!caseDetail) {
-    notFound();
-  }
+  if (!caseId || !caseEn) notFound();
 
+  const published = getPublishedCases();
+  const metricCount = published.reduce(
+    (total, caseStudy) => total + caseStudy.metrics.length,
+    0
+  );
   const t = getMessages(DEFAULT_LOCALE);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-[68ch] mx-auto space-y-8">
-        {/* Navigation back to Atlas preserving selection */}
-        <div>
-          <Link
-            href={`/atlas?case=${encodeURIComponent(caseDetail.slug)}`}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded py-1 px-1 -ml-1"
-          >
-            <span aria-hidden="true">&larr;</span>
-            <span>{t.common.backToAtlas}</span>
-          </Link>
-        </div>
-
-        <article className="space-y-10">
-          {/* Header */}
-          <CaseHeader
-            title={caseDetail.title}
-            summary={caseDetail.summary}
-            countryCode={caseDetail.countryCode}
-            region={caseDetail.region}
-            year={caseDetail.year}
-            sdgs={caseDetail.sdgs}
-            technologies={caseDetail.technologies}
-            domain={caseDetail.domain}
-          />
-
-          {/* Core Content Sections */}
-          <div className="space-y-8">
-            <CaseSection
-              title={t.cases.sections.problem}
-              content={caseDetail.problem}
-            />
-
-            <CaseSection
-              title={t.cases.sections.solution}
-              content={caseDetail.solution}
-            />
-
-            <CaseSection
-              title={t.cases.sections.aiRole}
-              content={caseDetail.aiRole}
-            />
-
-            <CaseSection
-              title={t.cases.sections.impact}
-              content={caseDetail.impact}
-            />
-          </div>
-
-          {/* Metrics block (renders nothing if metrics are empty) */}
-          <CaseMetrics
-            title={t.cases.sections.metrics}
-            metrics={caseDetail.metrics}
-          />
-
-          {/* Verifiable Sources */}
-          <CaseSources
-            title={t.cases.sections.sources}
-            opensInNewTab={t.common.opensInNewTab}
-            accessedPrefix={t.cases.sources.accessedPrefix}
-            sources={caseDetail.sources}
-          />
-        </article>
+    <main id="main">
+      <SiteHeader locale={DEFAULT_LOCALE} labels={t.nav} />
+      <div className="wrap py-8 sm:py-12">
+        <CaseDetailView
+          caseByLocale={{ id: caseId, en: caseEn }}
+          messagesByLocale={messages}
+        />
       </div>
+      <SiteFooter
+        locale={DEFAULT_LOCALE}
+        labels={t.footer}
+        caseCount={published.length}
+        metricCount={metricCount}
+      />
     </main>
   );
 }
