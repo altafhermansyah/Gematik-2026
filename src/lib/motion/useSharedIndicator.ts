@@ -121,7 +121,23 @@ export function useSharedIndicator<
 
     const onResize = () => measureAndApply(false);
     window.addEventListener("resize", onResize, { passive: true });
-    return () => window.removeEventListener("resize", onResize);
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => measureAndApply(false));
+      resizeObserver.observe(container);
+      const target = container.querySelector<HTMLElement>(
+        `[data-indicator-key="${CSS.escape(activeKey)}"]`
+      );
+      if (target) {
+        resizeObserver.observe(target);
+      }
+    }
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      resizeObserver?.disconnect();
+    };
   }, [activeKey, orientation]);
 
   return { containerRef, indicatorRef };
