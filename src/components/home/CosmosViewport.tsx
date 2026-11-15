@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
-import Lenis from "lenis";
 import type { PlanetCasePoint } from "./PlanetCanvas";
 
 const LazyPlanetCanvas = dynamic(() => import("./PlanetCanvas"), {
@@ -68,47 +67,8 @@ export default function CosmosViewport({
       observer.observe(el);
     }
 
-    const lenis = new Lenis({
-      duration: 1.05,
-      smoothWheel: true,
-      touchMultiplier: 1.5,
-    });
-
-    let rafId = 0;
-    const raf = (time: number) => {
-      lenis.raf(time);
-      rafId = requestAnimationFrame(raf);
-    };
-
-    const startRaf = () => {
-      if (!rafId && !document.hidden) {
-        rafId = requestAnimationFrame(raf);
-      }
-    };
-
-    const stopRaf = () => {
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-        rafId = 0;
-      }
-    };
-
-    const handleVisibility = () => {
-      if (document.hidden) {
-        stopRaf();
-      } else {
-        startRaf();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibility);
-    startRaf();
-
     return () => {
-      stopRaf();
-      document.removeEventListener("visibilitychange", handleVisibility);
       observer.disconnect();
-      lenis.destroy();
     };
   }, []);
 

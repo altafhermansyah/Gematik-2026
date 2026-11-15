@@ -4,6 +4,8 @@ import "@fontsource-variable/familjen-grotesk";
 import "@fontsource-variable/familjen-grotesk/wght-italic.css";
 import "./globals.css";
 import LocaleDocumentLang from "@/components/site/LocaleDocumentLang";
+import SmoothScrollProvider from "@/components/site/SmoothScrollProvider";
+import AssistantDrawer from "@/components/assistant/AssistantDrawer";
 import { idMessages } from "@/lib/i18n/messages";
 
 export const metadata: Metadata = {
@@ -29,7 +31,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           {idMessages.common.skipToContent}
         </a>
         <LocaleDocumentLang />
-        {children}
+        <SmoothScrollProvider>
+          {children}
+        </SmoothScrollProvider>
+        <AssistantDrawer />
       </body>
     </html>
   );

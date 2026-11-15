@@ -230,6 +230,26 @@ export type Messages = {
       integrity: string;
     };
   };
+  assistant: {
+    triggerButton: string;
+    triggerAria: string;
+    drawerTitle: string;
+    drawerSubtitle: string;
+    badgeGrounded: string;
+    badgeLocal: string;
+    placeholder: string;
+    sendButton: string;
+    clearChat: string;
+    emptyTitle: string;
+    emptySubtitle: string;
+    suggestionsTitle: string;
+    suggestions: string[];
+    outOfScopeNotice: string;
+    disclaimer: string;
+    readCase: string;
+    loading: string;
+    errorText: string;
+  };
 };
 
 export const idMessages: Messages = {
@@ -487,6 +507,35 @@ export const idMessages: Messages = {
       integrity: "Kutipan Sumber Verbatim",
     },
   },
+  assistant: {
+    triggerButton: "Tanya Asisten",
+    triggerAria: "Buka Asisten Lapangan KarsaLoka",
+    drawerTitle: "Asisten Lapangan KarsaLoka",
+    drawerSubtitle: "Eksplorasi Inovasi Lapangan & Dampak Ilmiah",
+    badgeGrounded: "16 Kasus Terverifikasi",
+    badgeLocal: "Cadangan Offline Aktif",
+    placeholder: "Tanyakan seputar kasus, peran AI, atau metrik...",
+    sendButton: "Kirim pesan",
+    clearChat: "Bersihkan percakapan",
+    emptyTitle: "Ada yang ingin Anda ketahui?",
+    emptySubtitle:
+      "Tanyakan mengenai studi kasus di Indonesia, peran AI di lapangan, atau metrik dampak yang dikutip dari jurnal ilmiah.",
+    suggestionsTitle: "Pertanyaan yang sering diajukan:",
+    suggestions: [
+      "Inovasi apa saja yang ada di Indonesia?",
+      "Bagaimana Wolbachia di Yogyakarta menekan DBD?",
+      "Bagaimana satelit & AI melacak kapal penangkap ikan ilegal?",
+      "Bagaimana drone Zipline di Rwanda mengirimkan darah?",
+      "Bagaimana AI mendeteksi penyakit daun di Kenya?",
+    ],
+    outOfScopeNotice:
+      "Hanya melayani pertanyaan seputar 16 inovasi KarsaLoka & sains terkait.",
+    disclaimer:
+      "Informasi berpijak pada data terverifikasi dan sumber primer jurnal (Nature, NEJM, dll.).",
+    readCase: "Buka studi kasus",
+    loading: "Memeriksa arsip kasus...",
+    errorText: "Terjadi kendala saat memproses jawaban. Silakan coba lagi.",
+  },
 };
 
 export const enMessages: Messages = {
@@ -743,6 +792,35 @@ export const enMessages: Messages = {
       architecture: "Static Local Index",
       integrity: "Verbatim Source Quotes",
     },
+  },
+  assistant: {
+    triggerButton: "Ask Assistant",
+    triggerAria: "Open KarsaLoka Field Assistant",
+    drawerTitle: "KarsaLoka Field Assistant",
+    drawerSubtitle: "Exploring Field Innovations & Scientific Impact",
+    badgeGrounded: "16 Verified Deployments",
+    badgeLocal: "Offline Fallback Active",
+    placeholder: "Ask about cases, AI roles, or impact metrics...",
+    sendButton: "Send message",
+    clearChat: "Clear conversation",
+    emptyTitle: "What would you like to explore?",
+    emptySubtitle:
+      "Ask about field deployments in Indonesia, practical AI implementation, or metrics cited directly from peer-reviewed journals.",
+    suggestionsTitle: "Suggested questions:",
+    suggestions: [
+      "What innovations are deployed in Indonesia?",
+      "How did Wolbachia mosquitoes reduce dengue in Yogyakarta?",
+      "How does satellite AI track illegal dark fishing vessels?",
+      "How does Zipline deliver blood across Rwanda in 15 minutes?",
+      "How does AI detect crop diseases in Kenya?",
+    ],
+    outOfScopeNotice:
+      "Strictly assists with KarsaLoka's 16 innovations & related sciences.",
+    disclaimer:
+      "Grounded in verified data and primary peer-reviewed sources (Nature, NEJM, etc.).",
+    readCase: "Read case dossier",
+    loading: "Searching verified archives...",
+    errorText: "Failed to process response. Please try again.",
   },
 };
 

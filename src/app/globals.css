@@ -2768,3 +2768,70 @@ body:has(.cosmos-page) .skip-link:focus {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   Ultra-Smooth Scroll & Assistant Animations
+   ========================================================================== */
+
+/* Silk-smooth inertia scrolling base */
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbars for printed field atlas & deep-space */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(22, 33, 28, 0.16);
+  border-radius: 9999px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(22, 33, 28, 0.32);
+}
+
+.cosmos-page ::-webkit-scrollbar-thumb,
+body:has(.cosmos-page) ::-webkit-scrollbar-thumb,
+[data-theme="night"] ::-webkit-scrollbar-thumb {
+  background: rgba(93, 240, 168, 0.22);
+}
+
+.cosmos-page ::-webkit-scrollbar-thumb:hover,
+body:has(.cosmos-page) ::-webkit-scrollbar-thumb:hover,
+[data-theme="night"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(93, 240, 168, 0.45);
+}
+
+/* Assistant drawer message slide-in animation */
+@keyframes assistantBubbleIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.assistant-msg-bubble {
+  animation: assistantBubbleIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-msg-bubble {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
