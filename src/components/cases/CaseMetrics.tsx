@@ -74,7 +74,7 @@ export default function CaseMetrics({
                 >
                   {sourceQuotePrefix}
                   <span className="sr-only">
-                    {" — "}
+                    {": "}
                     {metric.label} {opensInNewTab}
                   </span>
                 </a>

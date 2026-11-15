@@ -91,7 +91,7 @@ export const foodCases = [
         accessedAt: ACCESSED_AT,
       },
       {
-        title: "PlantVillage — Penn State University",
+        title: "PlantVillage: Penn State University",
         publisher: "PlantVillage",
         url: "https://plantvillage.psu.edu",
         accessedAt: ACCESSED_AT,
@@ -146,7 +146,7 @@ export const foodCases = [
         value: 30,
         unit: { id: "jenis tanaman", en: "crop species" },
         quote:
-          "Plantix covers 30 major crops and detects 400+ plant damages — just by taking a photo of a sick crop.",
+          "Plantix covers 30 major crops and detects 400+ plant damages, just by taking a photo of a sick crop.",
         sourceUrl:
           "https://www.fao.org/e-agriculture/news/plantix-mobile-app-help-farmers-diagnose-pests-and-diseases-their-crops",
       },
@@ -158,7 +158,7 @@ export const foodCases = [
         value: 400,
         unit: { id: "jenis kerusakan", en: "plant damages" },
         quote:
-          "Plantix covers 30 major crops and detects 400+ plant damages — just by taking a photo of a sick crop.",
+          "Plantix covers 30 major crops and detects 400+ plant damages, just by taking a photo of a sick crop.",
         sourceUrl:
           "https://www.fao.org/e-agriculture/news/plantix-mobile-app-help-farmers-diagnose-pests-and-diseases-their-crops",
       },

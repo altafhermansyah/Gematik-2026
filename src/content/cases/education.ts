@@ -92,7 +92,7 @@ export const educationCases = [
       },
       {
         title:
-          "Mindspark computer-assisted learning program in India — Evaluation Summary",
+          "Mindspark computer-assisted learning program in India: Evaluation Summary",
         publisher: "Abdul Latif Jameel Poverty Action Lab (J-PAL)",
         url: "https://www.povertyactionlab.org/evaluation/disrupting-education-experimental-evidence-technology-aided-instruction-india",
         accessedAt: ACCESSED_AT,
@@ -123,8 +123,8 @@ export const educationCases = [
       en: "Self-paced numeracy and literacy software by nonprofit onebillion deployed in Malawi and the UK to support children learning at their own pace.",
     },
     problem: {
-      id: "Di sekolah dasar dengan rasio murid per guru yang sangat tinggi—sering kali melebihi 60 hingga 100 siswa per kelas di Malawi—anak-anak yang tertinggal pada keterampilan berhitung awal jarang mendapatkan umpan balik individual.",
-      en: "In primary schools with very high pupil-to-teacher ratios—often exceeding 60 to 100 children per classroom in Malawi—children who struggle with early numeracy rarely receive individualized feedback.",
+      id: "Di sekolah dasar dengan rasio murid per guru yang sangat tinggi (sering kali melebihi 60 hingga 100 siswa per kelas di Malawi), anak-anak yang tertinggal pada keterampilan berhitung awal jarang mendapatkan umpan balik individual.",
+      en: "In primary schools with very high pupil-to-teacher ratios (often exceeding 60 to 100 children per classroom in Malawi), children who struggle with early numeracy rarely receive individualized feedback.",
     },
     solution: {
       id: "Organisasi nirlaba onebillion merancang aplikasi tablet berbasis permainan terstruktur dalam bahasa lokal (seperti Chichewa) dengan instruksi suara dan umpan balik langsung per langkah, sehingga setiap anak melangkah ke modul berikutnya hanya setelah lulus kuis penguasaan.",
@@ -167,7 +167,7 @@ export const educationCases = [
         accessedAt: ACCESSED_AT,
       },
       {
-        title: "onebillion — onecourse adaptive literacy and numeracy",
+        title: "onebillion: onecourse adaptive literacy and numeracy",
         publisher: "onebillion",
         url: "https://onebillion.org",
         accessedAt: ACCESSED_AT,

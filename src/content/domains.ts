@@ -2,7 +2,7 @@
  * Enam bidang masalah. Hampir statis: warnanya dipakai untuk titik globe,
  * chip daftar, dan penanda pilihan.
  *
- * `color` harus hex 6 digit — divalidasi oleh `assertContentIntegrity()` dan
+ * `color` harus hex 6 digit; divalidasi oleh `assertContentIntegrity()` dan
  * dipakai untuk pewarnaan pin 3D serta chip daftar kasus.
  */
 

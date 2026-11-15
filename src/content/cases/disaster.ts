@@ -75,14 +75,14 @@ export const disasterCases = [
     technologies: ["natural-language-processing", "crowdsourcing", "geospatial-mapping"],
     sources: [
       {
-        title: "PetaBencana.id — Real-time disaster mapping for Indonesia",
+        title: "PetaBencana.id: Real-time disaster mapping for Indonesia",
         publisher: "Yayasan Peta Bencana",
         url: "https://petabencana.id",
         accessedAt: ACCESSED_AT,
       },
       {
         title:
-          "PetaBencana.id — Harnessing social media for disaster management",
+          "PetaBencana.id: Harnessing social media for disaster management",
         publisher: "OECD Observatory of Public Sector Innovation (OPSI)",
         url: "https://oecd-opsi.org/innovations/petabencana-id/",
         accessedAt: ACCESSED_AT,
@@ -178,7 +178,7 @@ export const disasterCases = [
         accessedAt: ACCESSED_AT,
       },
       {
-        title: "Google Flood Hub — Early flood forecasting platform",
+        title: "Google Flood Hub: Early flood forecasting platform",
         publisher: "Google Research",
         url: "https://sites.research.google/floods/",
         accessedAt: ACCESSED_AT,

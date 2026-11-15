@@ -7,6 +7,11 @@ import { getCaseBySlug } from "@/modules/cases/queries";
 import { getPublishedCases } from "@/modules/content/store";
 import { DEFAULT_LOCALE } from "@/lib/i18n/localized";
 import { getMessages, messages } from "@/lib/i18n/messages";
+import { buildCaseJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
+import {
+  buildPageMetadata,
+  clampMetaTitle,
+} from "@/lib/seo/metadata";
 
 type CasePageProps = {
   params: Promise<{ slug: string }>;
@@ -31,13 +36,36 @@ export async function generateMetadata({
   const t = getMessages(DEFAULT_LOCALE);
 
   if (!caseDetail) {
-    return { title: t.cases.meta.notFoundTitle };
+    return {
+      title: t.cases.meta.notFoundTitle,
+      robots: { index: false, follow: false },
+    };
   }
 
-  return {
-    title: `${caseDetail.title}${t.cases.meta.titleSuffix}`,
+  const locationLabel = [caseDetail.region, caseDetail.countryCode]
+    .filter(Boolean)
+    .join(", ");
+  const shortTitle = clampMetaTitle(
+    caseDetail.title,
+    Math.max(36, 62 - t.cases.meta.titleSuffix.length)
+  );
+
+  return buildPageMetadata({
+    title: `${shortTitle}${t.cases.meta.titleSuffix}`,
     description: caseDetail.summary,
-  };
+    pathname: `/cases/${caseDetail.slug}`,
+    locale: DEFAULT_LOCALE,
+    imagePath: `/cases/${caseDetail.slug}/opengraph-image`,
+    imageAlt: `${caseDetail.title} | ${caseDetail.domain.name} (${locationLabel})`,
+    ogType: "article",
+    ...(caseDetail.year ? { publishedTime: `${caseDetail.year}-01-01` } : {}),
+    keywords: [
+      caseDetail.domain.name,
+      ...(caseDetail.region ? [caseDetail.region] : []),
+      ...caseDetail.technologies,
+      ...caseDetail.sdgs.map((sdg) => `SDG ${sdg}`),
+    ],
+  });
 }
 
 export default async function CasePage({ params }: CasePageProps) {
@@ -56,6 +84,12 @@ export default async function CasePage({ params }: CasePageProps) {
 
   return (
     <main id="main">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: serializeJsonLd(buildCaseJsonLd(caseId, DEFAULT_LOCALE)),
+        }}
+      />
       <SiteHeader locale={DEFAULT_LOCALE} labels={t.nav} />
       <div className="wrap py-8 sm:py-12">
         <CaseDetailView

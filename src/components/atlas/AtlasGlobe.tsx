@@ -1435,9 +1435,9 @@ export default function AtlasGlobe({
                     {caseStudy.countryCode}
                   </span>
                   <span className="sr-only">
-                    {" — "}
+                    {": "}
                     {caseStudy.title} ({caseStudy.region ?? caseStudy.countryCode}
-                    {" — "}
+                    {", "}
                     {caseStudy.domain.name})
                   </span>
                 </button>

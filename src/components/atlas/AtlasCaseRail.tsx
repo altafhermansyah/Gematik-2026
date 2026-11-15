@@ -38,7 +38,11 @@ export default function AtlasCaseRail({
   }
 
   return (
-    <div className="rail mt-2" role="list">
+    <div
+      className="rail mt-2"
+      role="list"
+      data-lenis-prevent-horizontal
+    >
       {cases.map((caseStudy) => {
         const isSelected = caseStudy.slug === selectedSlug;
         return (

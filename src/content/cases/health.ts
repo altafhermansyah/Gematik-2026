@@ -85,7 +85,7 @@ export const healthCases = [
     technologies: ["deep-learning", "protein-structure-prediction", "open-data"],
     sources: [
       {
-        title: "AlphaFold Protein Structure Database — About",
+        title: "AlphaFold Protein Structure Database: About",
         publisher: "EMBL-EBI and Google DeepMind",
         url: "https://alphafold.ebi.ac.uk/about",
         accessedAt: ACCESSED_AT,
@@ -293,13 +293,13 @@ export const healthCases = [
         accessedAt: ACCESSED_AT,
       },
       {
-        title: "qXR — AI-enabled chest X-ray reporting",
+        title: "qXR: AI-enabled chest X-ray reporting",
         publisher: "Qure.ai",
         url: "https://www.qure.ai/product/qxr",
         accessedAt: ACCESSED_AT,
       },
       {
-        title: "Contact us — registered office, Mumbai",
+        title: "Contact us: registered office, Mumbai",
         publisher: "Qure.ai",
         url: "https://www.qure.ai/contact-us",
         accessedAt: ACCESSED_AT,
@@ -404,7 +404,7 @@ export const healthCases = [
         accessedAt: ACCESSED_AT,
       },
       {
-        title: "mPedigree — Skoll Awardee profile",
+        title: "mPedigree: Skoll Awardee profile",
         publisher: "Skoll Foundation",
         url: "https://skoll.org/organization/mpedigree/",
         accessedAt: ACCESSED_AT,
@@ -492,7 +492,7 @@ export const healthCases = [
         accessedAt: ACCESSED_AT,
       },
       {
-        title: "World Mosquito Program — Yogyakarta, Indonesia",
+        title: "World Mosquito Program: Yogyakarta, Indonesia",
         publisher: "World Mosquito Program",
         url: "https://www.worldmosquitoprogram.org/en/global-progress/asia/indonesia",
         accessedAt: ACCESSED_AT,

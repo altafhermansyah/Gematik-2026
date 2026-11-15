@@ -1,46 +1,51 @@
 # KarsaLoka
 
-KarsaLoka adalah platform web edukatif yang menghubungkan tantangan nyata di Indonesia dan dunia dengan inovasi teknologi & kecerdasan artifisial (AI) yang teruji ilmiah, lalu menerjemahkan minat pengguna menjadi jalur pengembangan keahlian yang personal. Proyek ini dikembangkan untuk kompetisi **GEMATIK VI 2026** dengan tema *"Empowering Global Innovators for an Intelligent Future"*.
+KarsaLoka adalah platform web interaktif yang memetakan tantangan nyata di Indonesia dan dunia beserta inovasi teknologi dan kecerdasan artifisial (AI) yang telah teruji secara ilmiah di lapangan, lengkap dengan kutipan metrik verbatim dari sumber primer. Proyek ini dikembangkan untuk kompetisi **GEMATIK VI 2026** dengan tema *"Empowering Global Innovators for an Intelligent Future"*.
 
-## Latar Belakang
+## Latar Belakang & Alur Produk
 
-Banyak pelajar dan mahasiswa peduli terhadap krisis global seperti perubahan iklim, ketahanan pangan, kesehatan, pendidikan, kebencanaan, dan inklusi sosial, tetapi menghadapi dua kendala utama:
+Banyak pelajar, mahasiswa, dan pengembang muda peduli terhadap isu global seperti perubahan iklim, ketahanan pangan, kesehatan, pendidikan, kebencanaan, dan inklusi sosial, namun kesulitan menemukan bukti ilmiah yang terpusat dan terverifikasi mengenai bagaimana teknologi/AI bekerja langsung di lapangan.
 
-1. Sulit memetakan masalah nyata dan bagaimana teknologi/AI telah diterapkan serta diuji secara ilmiah di lapangan.
-2. Tidak mengetahui keahlian spesifik yang perlu dipelajari agar dapat berkontribusi secara bertanggung jawab.
-
-KarsaLoka menjembatani kepedulian pada skala global menuju langkah belajar yang konkret pada skala individu melalui alur berikut:
+KarsaLoka menyatukan eksplorasi spasial 3D, audit sumber primer, dan asisten tanya-jawab berbasis bukti dalam alur berikut:
 
 ```text
-Masalah Nyata -> Eksplorasi Globe Atlas 3D -> Studi Kasus Terverifikasi -> Kuis Diagnosis -> Jalur Keahlian -> Pelacakan Progres
+Masalah Global & 6 Bidang -> Eksplorasi Beranda Cosmos & Atlas Globe 3D -> Dossier Studi Kasus Terverifikasi -> Asisten KarsaLoka (Berbasis Kutipan)
 ```
 
-## Arsitektur 100% Full-Local (Tanpa Basis Data & Tanpa Panel Admin)
+## Arsitektur 100% Full-Local (Tanpa Basis Data & Tanpa Login)
 
-Sejak pembaruan arsitektur **2026-10-25**, KarsaLoka berjalan **100% lokal tanpa PostgreSQL, tanpa Prisma, dan tanpa panel admin (`/admin/*`)**:
+KarsaLoka berjalan **100% lokal tanpa PostgreSQL, tanpa Prisma, tanpa login pengguna, dan tanpa panel admin**:
 
-- **Konten Kurasi sebagai Kode (`src/content/`):** Seluruh 6 bidang masalah (`domains.ts`), **16 studi kasus terverifikasi** (`src/content/cases/*.ts`), jalur belajar (`paths.ts`), keahlian (`skills.ts`), dan sumber belajar (`resources.ts`) disimpan sebagai modul TypeScript bertipe ketat (`as const satisfies ...`).
-- **Validasi Integritas & Jejak Audit saat Build (`src/modules/content/validate.ts`):** Fungsi `assertContentIntegrity()` memvalidasi seluruh invarian lintas-record saat build: keunikan slug, kelengkapan dwibahasa (`id` dan `en`), keabsahan koordinat (`lat`, `lng`), serta memastikan **setiap angka di `metrics` (total 41 metrik) memiliki kutipan verbatim (`quote`) dan `sourceUrl`** yang terdaftar pada sumber kasus tersebut.
-- **Penyimpanan Progres di Sisi Klien:** Progres belajar, bookmark, dan hasil kuis disimpan di browser pengguna (`localStorage` melalui Zustand `persist`) tanpa memerlukan registrasi atau login.
+- **Konten Kurasi sebagai Kode (`src/content/`):** Seluruh **6 bidang masalah** (`domains.ts`) dan **16 studi kasus terverifikasi** (`src/content/cases/*.ts`) disimpan sebagai modul TypeScript bertipe ketat (`as const satisfies ...`) beserta file skema/referensi internal (`paths.ts`, `skills.ts`, `resources.ts`).
+- **Validasi Integritas saat Build (`src/modules/content/validate.ts`):** Fungsi `assertContentIntegrity()` memvalidasi seluruh invarian lintas entitas secara otomatis saat konten dibaca atau saat `next build`: keunikan slug, kelengkapan dwibahasa (`id` dan `en`), keabsahan koordinat geografis (`lat`, `lng`), serta memastikan **setiap dari 41 metrik memiliki kutipan verbatim (`quote`) dan `sourceUrl`** yang tercatat pada `sources` kasus terkait.
+- **Tersedia secara Statis & Tangguh (*Offline-Resilient*):** Seluruh 16 dossier kasus dan banner Open Graph-nya dirender statis (SSG) pada waktu build, sementara Asisten KarsaLoka memiliki *fallback* lokal deterministik bila tidak ada kunci API Gemini.
 
-## Fitur yang Sudah Tersedia (Ready-Prod)
+## Fitur yang Sudah Terimplementasi
 
-1. **Halaman Beranda (`/`)**: Panggung *deep-space* (`#04060f`, aksen solid `#5df0a8`) di atas Bumi WebGL 3D lokal (`three@0.143.0` + `lenis` + aset GLB/DRACO mandiri di `public/`), 6 kartu bidang × UN SDGs, *showcase* **Telemetri Koleksi · Langsung** interaktif (Per Domain, Target SDGs, 3 Kasus Indonesia), serta 4 metrik agregat teraudit.
+1. **Halaman Beranda Cosmos (`/`)**:
+   - Panggung *deep-space* (`#040914` dengan aksen `#5df0a8`) di atas Bumi WebGL 3D (`PlanetCanvas.tsx` + `CosmosViewport.tsx` berbasis `three@0.143.0`, `lenis`, dan aset GLB/DRACO mandiri di `public/`).
+   - 6 kartu bidang masalah terhubung dengan UN SDGs, *showcase* interaktif **Telemetri Koleksi** (`InteractiveTelemetryShowcase.tsx` dengan 3 tab: Per Domain, Target SDGs, dan 3 Kasus Indonesia), serta ringkasan 4 metrik agregat (`16` studi kasus, `11` negara, `41` metrik, `12` UN SDGs).
 2. **Halaman Atlas Inovasi Global (`/atlas`)**:
-   - **Globe 3D Interaktif (`AtlasGlobe.tsx` berbasis `Three.js` + GLB/DRACO)**:
-     - Menampilkan **16 titik kasus nyata** di **11 negara** yang diberi warna sesuai 6 bidang masalah.
-     - **Transisi Kamera Mulus (Fly-To)**: memilih kasus dari daftar atau URL otomatis memutar bola dunia ke koordinat `(lat, lng)` kasus tersebut melalui jalur sudut terpendek.
-     - **Kontrol HUD & Keyboard**: tombol *Fokus Indonesia*, *Reset sudut pandang*, *Jeda/Putar otomatis*, legenda warna bidang masalah, navigasi tombol panah keyboard pada `<canvas>`, serta daftar marker alternatif untuk pembaca layar (`sr-only`).
-     - **Ketahanan WebGL & Filter Kosong**: kanvas tetap hidup saat filter menghasilkan 0 kasus (menampilkan overlay reset filter tanpa menghancurkan konteks WebGL) dan mendukung pemulihan `webglcontextlost`.
-   - **Filter & Pencarian Instan Tersinkronisasi URL (`AtlasExplorer.tsx`)**:
+   - **Globe 3D Interaktif (`AtlasGlobe.tsx` berbasis `three@0.143.0` + `GLTFLoader` + `DRACOLoader` + `earth-builder.ts`):**
+     - Menampilkan **16 titik kasus nyata** di **11 negara** dengan warna sesuai 6 bidang masalah.
+     - **Transisi Kamera Mulus (*Fly-To*):** memilih kasus dari daftar, rel, atau parameter URL memutar globe menuju koordinat `(lat, lng)` kasus tersebut.
+     - **Kontrol HUD & Aksesibilitas Keyboard:** tombol *Fokus Indonesia*, *Reset sudut pandang*, *Jeda/Putar otomatis*, legenda warna, rotasi tombol panah pada `<canvas>`, daftar marker `sr-only`, pemulihan `webglcontextlost`, dan penyesuaian `prefers-reduced-motion`.
+   - **Filter, Pencarian, & Navigasi Tersinkronisasi URL (`AtlasExplorer.tsx`, `AtlasCaseRail.tsx`, `AtlasCaseSheet.tsx`):**
      - Filter per bidang masalah (`?domain=climate`, dll.), filter cepat **Indonesia (`?country=ID`)**, dan filter **Unggulan (`featured`)**.
-     - Pencarian langsung (`?q=...`, pintasan tombol `/`) berdasarkan judul, ringkasan, lokasi, teknologi, atau nomor SDG.
-     - Peralihan bahasa antarmuka dan konten secara instan (**Bahasa Indonesia `ID` / Bahasa Inggris `EN`** melalui `?lang=id|en`) dengan mempertahankan filter serta pilihan kasus aktif.
-   - **Panel Ringkasan Kaya (`AtlasCasePanel.tsx`) & Daftar Kasus (`AtlasCaseList.tsx`)**:
-     - Menampilkan pratinjau metrik dampak terverifikasi, badge SDG, tag teknologi, tahun, lokasi, dan tautan ke halaman detail statis.
+     - Pencarian instan (`?q=...`, pintasan `/`) berdasarkan judul, ringkasan, lokasi, teknologi, atau nomor SDG.
+     - Pergantian bahasa antarmuka dan konten secara instan (`?lang=id|en`) sambil mempertahankan filter serta kasus aktif.
+     - Rel *filmstrip* kertas (`AtlasCaseRail`) dan laci ringkasan geser (`AtlasCaseSheet`) untuk membaca metrik kunci dan menavigasi langsung ke halaman detail kasus.
 3. **Halaman Detail Studi Kasus (`/cases/[slug]`)**:
-   - Dirender secara **100% statis (SSG)** pada waktu build melalui `generateStaticParams()` dengan dukungan dwibahasa instan (`ID` / `EN`).
-   - Menyajikan masalah, solusi, peran AI/teknologi, dampak nyata, kartu metrik lengkap dengan **kutipan verbatim sumber primer** beserta tautan sumbernya, serta daftar referensi yang dapat diverifikasi.
+   - Dirender secara **statis (SSG)** untuk seluruh 16 kasus melalui `generateStaticParams()`.
+   - Menyajikan narasi masalah, solusi, peran AI/teknologi, dampak lapangan, kartu metrik lengkap dengan **kutipan verbatim sumber primer**, daftar referensi terverifikasi, serta peralihan bahasa `ID`/`EN`.
+4. **Asisten KarsaLoka (`AssistantDrawer.tsx` & `/api/assistant`)**:
+   - Laci tanya-jawab *evidence-grounded* yang tersedia di seluruh halaman, membatasi jawaban hanya pada cakupan 16 studi kasus, 6 bidang, UN SDGs, teknologi, dan metrik terverifikasi (`isQueryInDomain()`).
+   - Mendukung integrasi **Google Gemini API** secara opsional di sisi server (`GEMINI_API_KEY` / `GOOGLE_GENERATIVE_AI_API_KEY`) dan secara otomatis jatuh ke **mesin lokal deterministik** (`src/modules/assistant/local-engine.ts`) saat berjalan tanpa kunci API maupun dalam kondisi offline.
+5. **Optimalisasi SEO, Social Share Banner (`OG`), & GEO (`src/lib/seo/`)**:
+   - **Open Graph & Twitter Card (`1200×630` PNG):** Banner platform (`/opengraph-image`) dan **16 banner dinamis per studi kasus yang di-prerender SSG** (`/cases/[slug]/opengraph-image`) dengan tema Dark Cosmos Observatory melalui `next/og`.
+   - **Metadata Kanonikal & Bilingual:** `metadataBase`, `canonical`, `alternates.languages` (`id-ID`, `en-US`, `x-default`), `openGraph`, serta `twitter:card = "summary_large_image"`.
+   - **Structured Data (`JSON-LD`):** `@graph` (`WebSite`, `EducationalOrganization`, `ItemList`) pada `/` dan `TechArticle` (beserta `GeoCoordinates` & `citation` sumber primer) pada `/cases/[slug]` dengan sanitasi `\u003c`.
+   - **Crawling & GEO Endpoints:** `/sitemap.xml`, `/robots.txt` (ramah bot AI `OAI-SearchBot`, `GPTBot`, `ClaudeBot`, `PerplexityBot`, `Google-Extended` dan memblokir `/api/`), `/manifest.webmanifest`, serta dokumen Markdown terstruktur `/llms.txt` dan `/llms-full.txt`.
 
 ## Daftar 16 Studi Kasus Terverifikasi (6 Bidang Masalah)
 
@@ -63,65 +68,84 @@ Sejak pembaruan arsitektur **2026-10-25**, KarsaLoka berjalan **100% lokal tanpa
 | **Inklusi Sosial** (`inclusion`) | `be-my-eyes-visual-assistance` | Aarhus (`56.1629, 10.2039`) | `DK` | Be My Eyes Official Story |
 | **Inklusi Sosial** (`inclusion`) | `masakhane-african-languages-nlp` | Nairobi (`-1.2921, 36.8219`) | `KE` | *Findings of EMNLP* 2020 ([ACL Anthology](https://aclanthology.org/2020.findings-emnlp.195/)) |
 
-*(Total: 16 studi kasus `PUBLISHED` lintas 6 bidang masalah di 11 negara, termasuk 3 studi kasus di Indonesia, dengan 41 metrik dampak terverifikasi).*
+*(Total: **16 studi kasus `PUBLISHED`** lintas 6 bidang masalah di 11 negara, termasuk 3 studi kasus di Indonesia, dengan **41 metrik dampak** terverifikasi).*
 
 ## Teknologi
 
 | Kategori | Teknologi | Status Penggunaan |
 |---|---|---|
-| Framework | Next.js 16 (App Router), React 19 | Digunakan |
+| Framework | Next.js `16.3.8` (App Router), React `19.2.8` | Digunakan |
 | Bahasa | TypeScript 5 (mode `strict`) | Digunakan |
 | Styling | Tailwind CSS 4 melalui `@tailwindcss/postcss` | Digunakan |
+| Tipografi Mandiri | `@fontsource-variable/bricolage-grotesque` & `@fontsource-variable/familjen-grotesk` | Digunakan |
 | Lapisan Konten | Modul TypeScript lokal (`src/content/`) + validator `assertContentIntegrity()` | Digunakan |
-| Globe 3D Atlas (`/atlas`) | `three` 0.143.0 + GLB/DRACO lokal | Digunakan |
-| Bumi WebGL Beranda (`/`) | `three` 0.143.0 + `lenis` + GLB/DRACO lokal | Digunakan |
-| Validasi | `zod` (skema teks dwibahasa `LocalizedText`) | Digunakan |
-| Graf jalur keahlian | `@xyflow/react` | Terpasang |
-| State klien | `zustand` (`persist` di `localStorage`) | Terpasang |
-| Linting | ESLint 9 dengan `eslint-config-next` | Digunakan |
+| Globe 3D (`/` & `/atlas`) | `three@0.143.0` + `GLTFLoader`/`DRACOLoader` + aset lokal `public/globe/` & `public/draco/` | Digunakan |
+| Smooth Scroll | `lenis@^1.3.27` (`SmoothScrollProvider.tsx` & `CosmosViewport.tsx`) | Digunakan |
+| Validasi | `zod@^4.6.5` (skema teks dwibahasa `LocalizedText`) | Digunakan |
+| Asisten AI | `/api/assistant` (Gemini API opsional + `local-engine.ts` fallback) | Digunakan |
+| SEO & GEO | `next/og` (`ImageResponse`), JSON-LD, `/llms.txt`, `/llms-full.txt`, `sitemap.xml`, `robots.txt` | Digunakan |
+| Pengujian & Lint | `node:test` (`npm test`), ESLint 9 (`eslint-config-next`) | Digunakan |
 
 ## Struktur Direktori
 
 ```text
 .
 ├── .ai/
-│   └── KARSALOKA_PROJECT_RULES.md     Standar rekayasa dan desain proyek
+│   └── KARSALOKA_PROJECT_RULES.md     Konstitusi rekayasa dan desain proyek
 ├── docs/
-│   ├── PROJECT_CONCEPT.md             Konsep produk dan arsitektur konten lokal
-│   └── LAPORAN_MIGRASI_LOCAL_ATLAS.md Laporan migrasi arsitektur lokal & verifikasi data
-├── public/                            Aset statis
+│   ├── PROJECT_CONCEPT.md             Konsep produk, peta halaman, dan arsitektur konten lokal
+│   └── LAPORAN_MIGRASI_LOCAL_ATLAS.md Laporan arsitektur lokal & verifikasi data
+├── public/
+│   ├── draco/                         Decoder WebAssembly DRACO mandiri
+│   └── globe/                         Model planet.glb dan tekstur awan/cahaya lokal
+├── scripts/
+│   └── register-at-alias.mjs          Resolver alias `@/` untuk Node test runner
 ├── src/
 │   ├── app/
-│   │   ├── atlas/                     Halaman Globe Atlas 3D (/atlas) beserta loading & error boundary
-│   │   ├── cases/[slug]/              Halaman detail studi kasus statis (/cases/[slug])
-│   │   ├── globals.css                Entri Tailwind CSS
-│   │   ├── layout.tsx                 Root layout
-│   │   └── page.tsx                   Halaman beranda KarsaLoka
+│   │   ├── api/assistant/             Endpoint POST Asisten KarsaLoka
+│   │   ├── atlas/                     Halaman Atlas 3D (/atlas) beserta loading & error boundary
+│   │   ├── cases/[slug]/              Halaman detail studi kasus SSG + opengraph-image dinamis
+│   │   ├── llms.txt/ & llms-full.txt/ Endpoint teks terstruktur untuk model AI (GEO)
+│   │   ├── opengraph-image.tsx        Banner Open Graph utama (1200×630 PNG)
+│   │   ├── manifest.ts                Web App Manifest (/manifest.webmanifest)
+│   │   ├── robots.ts                  Konfigurasi crawler SEO & AI (/robots.txt)
+│   │   ├── sitemap.ts                 Peta situs XML (/sitemap.xml)
+│   │   ├── globals.css                Sistem desain, token warna & tipografi
+│   │   ├── layout.tsx                 Root layout, metadataBase & AssistantDrawer global
+│   │   └── page.tsx                   Beranda Cosmos (/), telemetri interaktif & JSON-LD
 │   ├── components/
-│   │   ├── atlas/                     AtlasExplorer, AtlasGlobe, AtlasCasePanel, AtlasCaseList
-│   │   └── cases/                     CaseHeader, CaseSection, CaseMetrics, CaseSources
+│   │   ├── assistant/                 AssistantDrawer
+│   │   ├── atlas/                     AtlasExplorer, AtlasGlobe, AtlasCaseRail, AtlasCaseSheet
+│   │   ├── cases/                     CaseDetailView, CaseHeader, CaseMetrics, CaseSection, CaseSources
+│   │   ├── home/                      CosmosViewport, PlanetCanvas, InteractiveTelemetryShowcase
+│   │   └── site/                      SiteHeader, SiteFooter, LocaleSwitch, LocaleDocumentLang, SmoothScrollProvider
 │   ├── content/
-│   │   ├── cases/                     Data studi kasus per bidang (climate, disaster, education, food, health, inclusion)
+│   │   ├── cases/                     16 studi kasus per bidang (climate, disaster, education, food, health, inclusion)
 │   │   ├── domains.ts                 6 bidang masalah
-│   │   ├── paths.ts                   Jalur keahlian & graf prasyarat
-│   │   ├── resources.ts               Materi belajar terkurasi
-│   │   └── skills.ts                  Katalog keahlian
+│   │   ├── paths.ts, resources.ts, skills.ts   Entitas pendukung validasi konten lokal
+│   │   └── ...
 │   ├── lib/
-│   │   └── i18n/                      Utilitas teks dwibahasa (localized.ts) & kamus UI (messages.ts)
+│   │   ├── i18n/                      Utilitas dwibahasa (localized.ts), kamus UI (messages.ts), URL & event
+│   │   ├── motion/                    Hook indikator berbagi (useSharedIndicator.ts)
+│   │   └── seo/                       Metadata, JSON-LD, renderer kartu OG 1200×630, & generator llms.txt
 │   └── modules/
-│       ├── atlas/                     Query, tipe, dan konstanta matematika globe
+│       ├── assistant/                 Knowledge prompt & mesin fallback lokal deterministik
+│       ├── atlas/                     Query dan tipe halaman Atlas
 │       ├── cases/                     Query dan tipe halaman detail kasus
-│       └── content/                   Store tunggal (store.ts), validator integritas (validate.ts), & tipe (types.ts)
-├── AGENTS.md                          Instruksi untuk agen AI terkait versi Next.js
+│       ├── content/                   Store tunggal (store.ts), validator (validate.ts), & tipe (types.ts)
+│       ├── home/                      Konversi koordinat lat/lng ke permukaan bola 3D
+│       └── three/                     Loader & pembangun scene Bumi 3D lokal (earth-builder.ts)
+├── AGENTS.md                          Instruksi agen Next.js 16 (dikelola oleh next dev)
+├── DESIGN.md                          Pedoman desain visual, palet & tipografi aktual
 ├── next.config.ts
 ├── eslint.config.mjs
 ├── postcss.config.mjs
 └── tsconfig.json
 ```
 
-## Instalasi dan Pengembangan Lokal (Tanpa Setup Database)
+## Instalasi dan Pengembangan Lokal
 
-Karena seluruh konten disimpan secara lokal di `src/content/`, Anda **tidak memerlukan PostgreSQL ataupun file `.env`** untuk menjalankan aplikasi:
+Seluruh aplikasi berjalan lokal tanpa setup database:
 
 1. Instal dependensi:
 
@@ -129,13 +153,20 @@ Karena seluruh konten disimpan secara lokal di `src/content/`, Anda **tidak meme
    npm install
    ```
 
-2. Jalankan server pengembangan:
+2. *(Opsional)* Tambahkan file `.env` bila ingin mengaktifkan mode Gemini API pada Asisten KarsaLoka atau mengatur URL kanonikal produksi (aplikasi tetap berjalan penuh tanpa `.env`):
+
+   ```env
+   GEMINI_API_KEY=...
+   NEXT_PUBLIC_SITE_URL=https://karsaloka.vercel.app
+   ```
+
+3. Jalankan server pengembangan:
 
    ```bash
    npm run dev
    ```
 
-3. Buka `http://localhost:3000` atau langsung ke `http://localhost:3000/atlas`.
+4. Buka `http://localhost:3000`, `http://localhost:3000/atlas`, atau langsung ke studi kasus seperti `http://localhost:3000/cases/wmp-wolbachia-dengue-yogyakarta`.
 
 ## Perintah Pengembangan & Verifikasi
 
@@ -143,6 +174,7 @@ Karena seluruh konten disimpan secara lokal di `src/content/`, Anda **tidak meme
 |---|---|
 | `npm run dev` | Menjalankan server pengembangan Next.js |
 | `npm run typecheck` | Menjalankan pemeriksaan tipe TypeScript (`tsc --noEmit`) |
+| `npm test` | Menjalankan unit test Node (`src/**/*.test.ts`: i18n, SEO/GEO, asisten lokal, validasi konten, & koordinat 3D) |
 | `npm run lint` | Menjalankan pemeriksaan ESLint |
-| `npm run build` | Memvalidasi integritas seluruh konten lokal (`assertContentIntegrity`) dan membangun produksi statis (`next build`) |
+| `npm run build` | Memvalidasi integritas seluruh konten lokal (`assertContentIntegrity`) dan membangun produksi statis & SSG (`next build`) |
 | `npm run start` | Menjalankan server hasil build produksi |

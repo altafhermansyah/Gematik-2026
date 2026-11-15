@@ -80,7 +80,7 @@ export const inclusionCases = [
         accessedAt: ACCESSED_AT,
       },
       {
-        title: "Novissi — Togo's 100% digital cash transfer program",
+        title: "Novissi: Togo's 100% digital cash transfer program",
         publisher: "République Togolaise",
         url: "https://novissi.gouv.tg/en/home-new-en/",
         accessedAt: ACCESSED_AT,
@@ -111,8 +111,8 @@ export const inclusionCases = [
       en: "A Danish mobile platform connecting blind and low-vision users with millions of sighted volunteers via live video calls alongside the multimodal Be My AI assistant.",
     },
     problem: {
-      id: "Lebih dari 340 juta penyandang tunanetra dan kurang awas (low vision) di seluruh dunia kerap menghadapi hambatan aksesibilitas dalam tugas sehari-hari yang membutuhkan informasi visual cepat—seperti membaca tanggal kedaluwarsa obat, papan petunjuk, atau layar alat rumah tangga.",
-      en: "Over 340 million blind and low-vision people worldwide routinely face accessibility barriers in everyday tasks requiring quick visual confirmation—such as reading medicine expiry dates, street signs, or appliance displays.",
+      id: "Lebih dari 340 juta penyandang tunanetra dan kurang awas (low vision) di seluruh dunia kerap menghadapi hambatan aksesibilitas dalam tugas sehari-hari yang membutuhkan informasi visual cepat, seperti membaca tanggal kedaluwarsa obat, papan petunjuk, atau layar alat rumah tangga.",
+      en: "Over 340 million blind and low-vision people worldwide routinely face accessibility barriers in everyday tasks requiring quick visual confirmation, such as reading medicine expiry dates, street signs, or appliance displays.",
     },
     solution: {
       id: "Diluncurkan dari Aarhus, Denmark pada 2015 oleh Hans Jørgen Wiberg, Be My Eyes memasangkan pengguna tunanetra dengan sukarelawan awas berdasarkan bahasa dan zona waktu dalam lebih dari 180 bahasa, serta mengintegrasikan Be My AI untuk mendeskripsikan foto secara instan dan memungkinkan pengguna mengajukan pertanyaan lanjutan.",
@@ -170,7 +170,7 @@ export const inclusionCases = [
     technologies: ["vision-language-models", "assistive-technology", "crowdsourcing"],
     sources: [
       {
-        title: "About Be My Eyes — Our Story and Mission",
+        title: "About Be My Eyes: Our Story and Mission",
         publisher: "Be My Eyes",
         url: "https://www.bemyeyes.com/about",
         accessedAt: ACCESSED_AT,
@@ -214,7 +214,7 @@ export const inclusionCases = [
     },
     impact: {
       id: "Karya fondasional Masakhane yang memenangkan Wikimedia Foundation Research Award dan diterbitkan di Findings of EMNLP (2020) berhasil menerbitkan tolok ukur penerjemahan mesin terbuka untuk lebih dari 30 bahasa Afrika oleh kontributor dari lebih dari 30 negara.",
-      en: "Masakhane's foundational work—winner of the Wikimedia Foundation Research Award and published in Findings of EMNLP (2020)—produced open machine translation benchmarks for over 30 African languages built by contributors from over 30 countries.",
+      en: "Masakhane's foundational work, winner of the Wikimedia Foundation Research Award and published in Findings of EMNLP (2020), produced open machine translation benchmarks for over 30 African languages built by contributors from over 30 countries.",
     },
     metrics: [
       {
@@ -255,7 +255,7 @@ export const inclusionCases = [
         accessedAt: ACCESSED_AT,
       },
       {
-        title: "Masakhane — Strengthening NLP for African Languages",
+        title: "Masakhane: Strengthening NLP for African Languages",
         publisher: "Masakhane NLP Community",
         url: "https://www.masakhane.io",
         accessedAt: ACCESSED_AT,

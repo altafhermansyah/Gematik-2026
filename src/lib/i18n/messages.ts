@@ -240,6 +240,7 @@ export type Messages = {
     placeholder: string;
     sendButton: string;
     clearChat: string;
+    closeDrawer: string;
     emptyTitle: string;
     emptySubtitle: string;
     suggestionsTitle: string;
@@ -273,7 +274,7 @@ export const idMessages: Messages = {
   },
   home: {
     meta: {
-      title: "KarsaLoka — Atlas Inovasi AI Terverifikasi & 17 SDGs",
+      title: "KarsaLoka | Atlas Inovasi AI Terverifikasi & 17 SDGs",
       description:
         "Arsip 16 studi kasus kecerdasan buatan dan teknologi terapan di 11 negara yang mendukung agenda GEMATIK VI dan 12 target UN SDGs, lengkap dengan kutipan angka dari laporan primer.",
     },
@@ -422,7 +423,7 @@ export const idMessages: Messages = {
   cases: {
     meta: {
       notFoundTitle: "Berkas tidak ditemukan",
-      titleSuffix: " — KarsaLoka",
+      titleSuffix: " | KarsaLoka",
     },
     fileLabel: "Berkas kasus",
     rail: {
@@ -469,7 +470,7 @@ export const idMessages: Messages = {
     },
   },
   globalNotFound: {
-    metaTitle: "404 — Halaman tidak ditemukan · KarsaLoka",
+    metaTitle: "404 | Halaman tidak ditemukan · KarsaLoka",
     metaDescription:
       "Halaman yang Anda cari tidak tersedia. Buka Atlas 3D atau kembali ke beranda KarsaLoka.",
     eyebrow: "Rute tidak ditemukan · 404",
@@ -517,6 +518,7 @@ export const idMessages: Messages = {
     placeholder: "Tanyakan seputar kasus, peran AI, atau metrik...",
     sendButton: "Kirim pesan",
     clearChat: "Bersihkan percakapan",
+    closeDrawer: "Tutup panel asisten",
     emptyTitle: "Ada yang ingin Anda ketahui?",
     emptySubtitle:
       "Tanyakan mengenai studi kasus di Indonesia, peran AI di lapangan, atau metrik dampak yang dikutip dari jurnal ilmiah.",
@@ -559,7 +561,7 @@ export const enMessages: Messages = {
   },
   home: {
     meta: {
-      title: "KarsaLoka — Verified AI Innovation & 17 SDGs Atlas",
+      title: "KarsaLoka | Verified AI Innovation & 17 SDGs Atlas",
       description:
         "An index of 16 documented AI and digital technology deployments across 11 countries aligned with GEMATIK VI and 12 UN SDGs, anchored to verbatim primary-source quotes.",
     },
@@ -708,7 +710,7 @@ export const enMessages: Messages = {
   cases: {
     meta: {
       notFoundTitle: "Case file not found",
-      titleSuffix: " — KarsaLoka",
+      titleSuffix: " | KarsaLoka",
     },
     fileLabel: "Case file",
     rail: {
@@ -755,7 +757,7 @@ export const enMessages: Messages = {
     },
   },
   globalNotFound: {
-    metaTitle: "404 — Page not found · KarsaLoka",
+    metaTitle: "404 | Page not found · KarsaLoka",
     metaDescription:
       "The requested page does not exist. Explore the 3D Atlas or return to the KarsaLoka homepage.",
     eyebrow: "Route not found · 404",
@@ -803,6 +805,7 @@ export const enMessages: Messages = {
     placeholder: "Ask about cases, AI roles, or impact metrics...",
     sendButton: "Send message",
     clearChat: "Clear conversation",
+    closeDrawer: "Close assistant panel",
     emptyTitle: "What would you like to explore?",
     emptySubtitle:
       "Ask about field deployments in Indonesia, practical AI implementation, or metrics cited directly from peer-reviewed journals.",

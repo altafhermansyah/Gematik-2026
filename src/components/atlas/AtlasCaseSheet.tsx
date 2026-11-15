@@ -82,6 +82,7 @@ export default function AtlasCaseSheet({
 
           <div
             key={selectedCase.slug}
+            data-lenis-prevent
             className="atlas-sheet-body flex-1 overflow-y-auto px-6 pb-10 pt-5"
           >
             <div

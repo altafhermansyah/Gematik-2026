@@ -14,6 +14,8 @@ import { getAtlasCases, getAtlasDomains } from "@/modules/atlas/queries";
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/localized";
 import { formatTemplate, getMessages } from "@/lib/i18n/messages";
 import { localeHref } from "@/lib/i18n/urls";
+import { buildHomeJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 
 type HomeProps = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -27,11 +29,25 @@ export async function generateMetadata({
   searchParams,
 }: HomeProps): Promise<Metadata> {
   const resolved = await searchParams;
-  const t = getMessages(readLocale(resolved.lang));
-  return {
+  const locale = readLocale(resolved.lang);
+  const t = getMessages(locale);
+
+  return buildPageMetadata({
     title: t.home.meta.title,
     description: t.home.meta.description,
-  };
+    pathname: "/",
+    locale,
+    imagePath: "/opengraph-image",
+    ogType: "website",
+    hasLocaleQueryAlternates: true,
+    keywords: [
+      "KarsaLoka",
+      "atlas inovasi AI",
+      "studi kasus teknologi lapangan",
+      "UN SDGs",
+      "primary-source impact archive",
+    ],
+  });
 }
 
 const VERIFIED_FIELD_PARTNERS = [
@@ -230,6 +246,12 @@ export default async function Home({ searchParams }: HomeProps) {
       <SiteHeader locale={locale} variant="cosmos" labels={t.nav} />
 
       <main id="main" tabIndex={-1} className="cosmos-main">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: serializeJsonLd(buildHomeJsonLd(locale)),
+          }}
+        />
         {/* Section 1: Hero + Verified Field Deployments */}
         <section className="cosmos-hero">
           <div className="cosmos-hero-inner">

@@ -87,7 +87,7 @@ export const climateCases = [
     technologies: ["audio-classification", "bioacoustics", "iot"],
     sources: [
       {
-        title: "Rainforest Connection — Acoustic monitoring for forest protection",
+        title: "Rainforest Connection: Acoustic monitoring for forest protection",
         publisher: "Rainforest Connection (RFCx)",
         url: "https://rfcx.org",
         accessedAt: ACCESSED_AT,
@@ -198,7 +198,7 @@ export const climateCases = [
         accessedAt: ACCESSED_AT,
       },
       {
-        title: "Global Fishing Watch — Open Ocean Data Platform",
+        title: "Global Fishing Watch: Open Ocean Data Platform",
         publisher: "Global Fishing Watch",
         url: "https://globalfishingwatch.org",
         accessedAt: ACCESSED_AT,

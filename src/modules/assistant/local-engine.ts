@@ -1,12 +1,13 @@
-import { getPublishedCases, getPaths, getSkills } from "@/modules/content/store";
+import { getPublishedCases } from "@/modules/content/store";
 import type { Locale } from "@/lib/i18n/localized";
 import { resolveLocalized } from "@/lib/i18n/localized";
+import { localeHref } from "@/lib/i18n/urls";
 import type { AssistantChatResponse } from "./types";
 
 const IN_DOMAIN_KEYWORDS = [
   "karsaloka", "karsa", "loka", "atlas", "globe", "kasus", "case", "inovasi", "innovation",
   "ai", "kecerdasan", "buatan", "teknologi", "technology", "metrik", "metric", "dampak", "impact",
-  "sdg", "jalur", "path", "roadmap", "belajar", "skill", "keahlian",
+  "sdg", "belajar",
   // 6 Domains
   "iklim", "climate", "lingkungan", "environment",
   "pangan", "food", "pertanian", "agriculture", "hama", "tanaman",
@@ -73,21 +74,19 @@ export function generateLocalFallback(
 ): AssistantChatResponse {
   const normalized = query.toLowerCase().trim();
   const cases = getPublishedCases();
-  const paths = getPaths();
-  const skills = getSkills();
 
   // 1. Check out of context
   if (!isQueryInDomain(normalized)) {
     if (locale === "en") {
       return {
-        reply: `**Out of Scope Notice**\n\nI am the **KarsaLoka Field Assistant**, dedicated exclusively to assisting you with our 16 verified technological innovations, global challenges, SDGs, impact metrics, and learning pathways.\n\nI cannot answer general queries outside of this platform's domain (such as general knowledge, cooking, general coding, or unrelated topics).\n\n**Here are topics you can explore with me:**\n* *"What innovations are taking place in Indonesia?"*\n* *"How did Wolbachia mosquitoes reduce dengue cases by 77.1% in Yogyakarta?"*\n* *"How does Zipline use autonomous drones for medical deliveries in Rwanda?"*\n* *"How does bioacoustics protect rainforests in Sumatra?"*`,
+        reply: `**Out of Scope Notice**\n\nI am the **KarsaLoka Field Assistant**, dedicated exclusively to assisting you with our 16 verified technological innovations, 6 global challenges, UN SDGs, and verified impact metrics.\n\nI cannot answer general queries outside of this platform's domain (such as general knowledge, cooking, general coding, or unrelated topics).\n\n**Here are topics you can explore with me:**\n* *"What innovations are taking place in Indonesia?"*\n* *"How did Wolbachia mosquitoes reduce dengue cases by 77.1% in Yogyakarta?"*\n* *"How does Zipline use autonomous drones for medical deliveries in Rwanda?"*\n* *"How does bioacoustics protect rainforests in Sumatra?"*`,
         isInContext: false,
         isFallback: true,
       };
     }
 
     return {
-      reply: `**Pemberitahuan Batasan Topik**\n\nMaaf, sebagai **Asisten Lapangan KarsaLoka**, saya hanya dapat menjawab pertanyaan seputar 16 studi kasus inovasi teknologi global & Indonesia, 6 bidang masalah, metrik ilmiah terverifikasi, dan jalur belajar KarsaLoka.\n\nSaya tidak dapat melayani pertanyaan di luar konteks ini (seperti resep masakan, obrolan umum, politik, atau pertanyaan di luar lingkup KarsaLoka).\n\n**Topik terverifikasi yang bisa Anda tanyakan:**\n* *"Inovasi apa saja yang ada di Indonesia?"*\n* *"Bagaimana nyamuk ber-Wolbachia menekan 77,1% kasus DBD di Yogyakarta?"*\n* *"Bagaimana satelit dan AI mendeteksi kapal penangkap ikan tak berizin?"*\n* *"Bagaimana drone Zipline mengirimkan darah di Rwanda dalam 15 menit?"*`,
+      reply: `**Pemberitahuan Batasan Topik**\n\nMaaf, sebagai **Asisten Lapangan KarsaLoka**, saya hanya dapat menjawab pertanyaan seputar 16 studi kasus inovasi teknologi global & Indonesia, 6 bidang masalah, target UN SDGs, dan 41 metrik ilmiah terverifikasi.\n\nSaya tidak dapat melayani pertanyaan di luar konteks ini (seperti resep masakan, obrolan umum, politik, atau pertanyaan di luar lingkup KarsaLoka).\n\n**Topik terverifikasi yang bisa Anda tanyakan:**\n* *"Inovasi apa saja yang ada di Indonesia?"*\n* *"Bagaimana nyamuk ber-Wolbachia menekan 77,1% kasus DBD di Yogyakarta?"*\n* *"Bagaimana satelit dan AI mendeteksi kapal penangkap ikan tak berizin?"*\n* *"Bagaimana drone Zipline mengirimkan darah di Rwanda dalam 15 menit?"*`,
       isInContext: false,
       isFallback: true,
     };
@@ -106,7 +105,7 @@ export function generateLocalFallback(
       const listText = idCases
         .map(
           (c) =>
-            `* **[${resolveLocalized(c.title, "en")}](/cases/${c.slug})** (${c.region}, ${c.year})\n  ${resolveLocalized(c.summary, "en")}\n  *Key Metric:* ${c.metrics[0]?.value.toLocaleString()} ${resolveLocalized(c.metrics[0]?.unit, "en")} ("${c.metrics[0]?.quote}")`
+            `* **[${resolveLocalized(c.title, "en")}](${localeHref(`/cases/${c.slug}`, locale)})** (${c.region}, ${c.year})\n  ${resolveLocalized(c.summary, "en")}\n  *Key Metric:* ${c.metrics[0]?.value.toLocaleString()} ${resolveLocalized(c.metrics[0]?.unit, "en")} ("${c.metrics[0]?.quote}")`
         )
         .join("\n\n");
 
@@ -200,9 +199,11 @@ export function generateLocalFallback(
       .map((s) => `* [${s.title}](${s.url}) (${s.publisher ?? "Sumber Primer"})`)
       .join("\n");
 
+    const caseHref = localeHref(`/cases/${primary.slug}`, locale);
+
     if (locale === "en") {
       return {
-        reply: `### [${title}](/cases/${primary.slug})\n*Location: ${primary.region ?? primary.countryCode} (${primary.year ?? "-"}) | Domain: ${primary.domainSlug} | SDGs: ${primary.sdgs.join(", ")}*\n\n${summary}\n\n**The Problem:**\n${problem}\n\n**The Solution & AI Role:**\n${solution}\n\n*AI Role Detail:* ${aiRole}\n\n**Impact in the Field:**\n${impact}\n\n**Verified Metrics:**\n${metricsText}\n\n**Primary Scientific References:**\n${sourcesText}\n\n👉 [Explore Full Dossier for this Case](/cases/${primary.slug})`,
+        reply: `### [${title}](${caseHref})\n*Location: ${primary.region ?? primary.countryCode} (${primary.year ?? "-"}) | Domain: ${primary.domainSlug} | SDGs: ${primary.sdgs.join(", ")}*\n\n${summary}\n\n**The Problem:**\n${problem}\n\n**The Solution & AI Role:**\n${solution}\n\n*AI Role Detail:* ${aiRole}\n\n**Impact in the Field:**\n${impact}\n\n**Verified Metrics:**\n${metricsText}\n\n**Primary Scientific References:**\n${sourcesText}\n\n👉 [Explore Full Dossier for this Case](${caseHref})`,
         caseSlugs: [primary.slug],
         isInContext: true,
         isFallback: true,
@@ -210,44 +211,14 @@ export function generateLocalFallback(
     }
 
     return {
-      reply: `### [${title}](/cases/${primary.slug})\n*Lokasi: ${primary.region ?? primary.countryCode} (${primary.year ?? "-"}) | Bidang: ${primary.domainSlug} | Target SDG: ${primary.sdgs.join(", ")}*\n\n${summary}\n\n**Masalah yang Dihadapi:**\n${problem}\n\n**Solusi & Peran Teknologi/AI:**\n${solution}\n\n*Detail Peran AI:* ${aiRole}\n\n**Dampak Nyata di Lapangan:**\n${impact}\n\n**Metrik Dampak Terverifikasi:**\n${metricsText}\n\n**Sumber Ilmiah Primer:**\n${sourcesText}\n\n👉 [Buka Halaman Dossier Lengkap](/cases/${primary.slug})`,
+      reply: `### [${title}](${caseHref})\n*Lokasi: ${primary.region ?? primary.countryCode} (${primary.year ?? "-"}) | Bidang: ${primary.domainSlug} | Target SDG: ${primary.sdgs.join(", ")}*\n\n${summary}\n\n**Masalah yang Dihadapi:**\n${problem}\n\n**Solusi & Peran Teknologi/AI:**\n${solution}\n\n*Detail Peran AI:* ${aiRole}\n\n**Dampak Nyata di Lapangan:**\n${impact}\n\n**Metrik Dampak Terverifikasi:**\n${metricsText}\n\n**Sumber Ilmiah Primer:**\n${sourcesText}\n\n👉 [Buka Halaman Dossier Lengkap](${caseHref})`,
       caseSlugs: [primary.slug],
       isInContext: true,
       isFallback: true,
     };
   }
 
-  // 4. Learning path query
-  if (
-    normalized.includes("jalur") ||
-    normalized.includes("path") ||
-    normalized.includes("belajar") ||
-    normalized.includes("skill") ||
-    normalized.includes("kurikulum")
-  ) {
-    const p = paths[0];
-    const pathTitle = resolveLocalized(p.title, locale);
-    const pathDesc = resolveLocalized(p.description, locale);
-    const skillList = skills
-      .map((s) => `* **${resolveLocalized(s.name, locale)}** (\`${s.slug}\`)`)
-      .join("\n");
-
-    if (locale === "en") {
-      return {
-        reply: `### Learning Pathway: ${pathTitle}\n*Level: ${p.level} | Estimated: ${p.estimatedHours} hours*\n\n${pathDesc}\n\n**Curriculum Skills:**\n${skillList}\n\nEvery node in this path directly bridges user curiosity into real technical empowerment, connecting foundational Python skills to deploying responsible AI for real-world impact.`,
-        isInContext: true,
-        isFallback: true,
-      };
-    }
-
-    return {
-      reply: `### Jalur Belajar: ${pathTitle}\n*Tingkat: ${p.level} | Estimasi: ${p.estimatedHours} jam belajar*\n\n${pathDesc}\n\n**Keahlian yang Dipelajari:**\n${skillList}\n\nJalur ini dirancang agar siapapun dapat berpindah dari sekadar melihat krisis di Atlas menjadi inovator yang mampu membangun solusi kecerdasan buatan terapan yang bertanggung jawab.`,
-      isInContext: true,
-      isFallback: true,
-    };
-  }
-
-  // 5. General summary of KarsaLoka
+  // 4. General summary of KarsaLoka
   if (locale === "en") {
     return {
       reply: `### Welcome to KarsaLoka Field Assistant\n\nKarsaLoka is an interactive educational platform connecting global problems with **16 verified field innovations** across 11 countries and 6 problem domains:\n\n* **Climate & Environment:** Rainforest bioacoustics (Indonesia), Dark fishing vessels tracking (US)\n* **Food & Agriculture:** PlantVillage Nuru (Kenya), Plantix crop diagnostics (India)\n* **Health & Science:** Wolbachia dengue suppression (Indonesia), AlphaFold protein folding (UK), Zipline medical drones (Rwanda), Qure.ai TB screening (India), mPedigree drug authentication (Ghana)\n* **Education:** Mindspark adaptive learning (India), onebillion tablet math (Malawi)\n* **Disaster Resilience:** PetaBencana flood crowdsourcing (Indonesia), Google Flood Hub (Bangladesh)\n* **Social Inclusion:** Togo Novissi satellite targeting (Togo), Be My Eyes visual assistance (Denmark), Masakhane African NLP (Kenya)\n\nWhat would you like to explore? Feel free to ask about any specific case or technology!`,

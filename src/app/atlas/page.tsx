@@ -7,6 +7,7 @@ import AtlasExplorer, {
 import { getAtlasCases, getAtlasDomains } from "@/modules/atlas/queries";
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/localized";
 import { getMessages } from "@/lib/i18n/messages";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 
 type AtlasPageProps = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -20,11 +21,24 @@ export async function generateMetadata({
   searchParams,
 }: AtlasPageProps): Promise<Metadata> {
   const resolved = await searchParams;
-  const t = getMessages(readLocale(resolved.lang));
-  return {
+  const locale = readLocale(resolved.lang);
+  const t = getMessages(locale);
+
+  return buildPageMetadata({
     title: t.atlas.meta.title,
     description: t.atlas.meta.description,
-  };
+    pathname: "/atlas",
+    locale,
+    imagePath: "/opengraph-image",
+    ogType: "website",
+    hasLocaleQueryAlternates: true,
+    keywords: [
+      "KarsaLoka Atlas",
+      "globe inovasi 3D",
+      "AI social impact atlas",
+      "UN SDGs case studies",
+    ],
+  });
 }
 
 export default async function AtlasPage({ searchParams }: AtlasPageProps) {
